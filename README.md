@@ -1,96 +1,102 @@
 # Jev-in-the-Loop
 
-### 让需要 LLM 决策的任务，更快一步。
+**English** · [简体中文](README_ZH.md)
 
-**Jev-in-the-Loop 致力于研究如何用 Jev 加速各类需要 LLM 做决策的任务。** 从选择下一步操作，到推进一段工作流，我们探索把 Jev 引入决策循环，让智能体从理解意图更快地走向完成任务。
+### Faster decisions. Faster progress.
 
-我们的关注点不止于浏览器，而是一个更广泛的问题：**哪些决策可以交给 Jev，让整个任务更快完成？**
+**Jev-in-the-Loop explores how Jev can accelerate tasks that rely on LLM decision-making.** From choosing the next action to moving a workflow forward, we bring Jev into the decision loop to help agents turn intent into results faster.
 
-第一个落地场景：**把超高速浏览器操作带进 Codex。** Codex 理解任务、准备输入，Jev 快速选择下一步操作，插件在本地 Chrome 中执行。从搜索到打开目标页面，让点击、输入与跳转连贯推进。
+Our focus goes beyond the browser. The bigger question is: **which decisions can Jev take on to make the whole task faster?**
 
-**已有 Codex，再接上 Jev 就够了。** 不用另外配置文本生成模型，也不用再申请一份 OpenRouter 或其他文本模型 API Key。
+Our first application: **ultrafast browser interaction, right inside Codex.** Codex understands the task and prepares the inputs. Jev quickly selects the next action, and the plugin executes it in local Chrome. Searches, clicks, typing, and navigation flow from one step to the next.
 
-[观看演示](#从一句话到你要的页面) · [开始使用](#开始使用) · [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+**Already using Codex? Just add Jev.** No additional text-generation model to configure. No extra OpenRouter or other text-model API key.
 
-## 从一句话，到你要的页面
+[Watch the demos](#from-a-prompt-to-the-page-you-want) · [Get started](#get-started) · [Installation guide](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
 
-<img src="docs/media/hero-browser.png" alt="Jev-in-the-Loop: Browser — 项目的首个实践模块" width="100%" />
+## From a prompt to the page you want
 
-### 一句话，走到酒店预订页
+<img src="docs/media/hero-browser.png" alt="Jev-in-the-Loop: Browser — our first module" width="100%" />
 
-> 帮我找云南昆明的酒店，10 月 13 日入住，14 日退房，2 位成人。
-> 选好房型，打开预订填写页，留给我确认。
+### One prompt. Ready to book.
 
-更换目的地、搜索酒店、查看详情、选择房型。让连续的点击一气呵成，最后停在预订填写页，等你接手。
+> Find hotels in Kunming, Yunnan, for two adults, checking in October 13 and out October 14.
+> Choose a room and open the booking form. Leave the final confirmation to me.
 
-https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273
+Change the destination, search hotels, explore the details, and select a room. A sequence of clicks becomes one continuous flow, stopping at the booking form for you to take over.
 
-### 从想学什么，到打开课程
+<a href="https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273"><img src="docs/media/demo-hotel.gif" alt="Ctrip hotel search and booking-page demo at 3× playback, with a source-time counter" width="100%" /></a>
 
-> 在 B 站用英文搜索 Stanford CS336，打开第一个视频。
+[Watch the original MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3× playback** · Timer shows recording elapsed time.
 
-输入关键词、提交搜索、打开课程。从一个学习念头，到眼前的视频页面。
+### From curiosity to a course
 
-https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864
+> Search Bilibili in English for Stanford CS336 and open the first video.
 
-不必把需求拆成“点击这里，再点击那里”。说清楚想做什么，让操作接着发生。
+Enter the query, submit the search, and open the course. From something you want to learn to the video in front of you.
 
-## 少一点点击，多一点完成
+<a href="https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864"><img src="docs/media/demo-course.gif" alt="Bilibili search for Stanford CS336 and opening the first video at original speed" width="100%" /></a>
 
-**不再多接一套模型。**
+[Watch the original MP4](https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864) · **1× playback** · Timer shows recording elapsed time.
 
-搜索词、目的地、日期由 Codex 准备，Jev 根据页面选择操作与输入。你继续使用现有的 Codex，只需为插件配置 TypeSafe API Key。
+No need to spell out every click. Say what you want to accomplish, and let the actions follow.
 
-**在熟悉的 Codex 里用。**
+## Fewer clicks for you. More getting done.
 
-装成插件，直接交代任务。不用另开一个工作台，也不用切换到另一套助手。
+**No extra model stack.**
 
-**不只点击快，整段操作都要快。**
+Codex prepares search terms, destinations, and dates. Jev selects actions and inputs based on the page. Keep using your existing Codex setup—just configure a TypeSafe API key for the plugin.
 
-搜索、选择、滚动、导航，在一次插件调用中连续推进。Jev 根据当前网页快速决策，执行后立即观察结果、衔接下一步。把速度用在完成任务上，而不只是某一次点击。
+**Stay in Codex.**
 
-**做到你指定的位置。**
+Install the plugin and give it a task. No separate workspace or second assistant to switch to.
 
-打开视频结果页，进入酒店预订页，或保留页面继续查看。你决定目标，也决定在哪里接手。
+**Not just fast clicks. Fast workflows.**
 
-## 给它一个任务
+Search, select, scroll, and navigate within a single plugin call. Jev makes the next decision based on the current page; the execution loop observes the result and moves on. Speed should help finish the task, not just one click.
 
-找学习资料：
+**Stop where you choose.**
+
+Open video results, reach a hotel booking form, or leave a page ready to explore. You set the goal—and decide when to take over.
+
+## Give it a task
+
+Find something to learn:
 
 ```text
-用 Jev 在 B 站用英文搜索 Stanford CS336，打开第一个视频。
+Use Jev to search Bilibili in English for Stanford CS336 and open the first video.
 ```
 
-准备一次出行：
+Prepare a trip:
 
 ```text
-用 Jev 在携程找昆明酒店，10 月 13–14 日，1 间房、2 位成人。
-打开一家酒店，选好房型，停在预订填写页，不提交订单。
+Use Jev to find hotels in Kunming on Ctrip for October 13–14, one room, two adults.
+Open a hotel, choose a room, and stop at the booking form. Do not submit an order.
 ```
 
-从一件你经常需要手动完成的网页任务开始。
+Start with a browser task you find yourself doing by hand.
 
-## 开始使用
+## Get started
 
-准备好 **Codex、Chrome** 和你的 **TypeSafe API Key**。本地运行环境由 **uv** 管理，包括插件所需的 Python 和依赖。
+You'll need **Codex, Chrome**, and a **TypeSafe API key**. **uv** manages the local runtime, including Python and the plugin's dependencies.
 
 ```sh
 git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
 cd Jev-in-the-Loop/plugins/jev-browser-plugin
 ```
 
-按照 [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
+Follow the [installation guide (Chinese)](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) to configure your key, connect Chrome, and install the plugin. Then open a new Codex task and say: **“Use Jev to…”**
 
-## 把 Jev 带进更多决策循环
+## More decisions. More possibilities.
 
-浏览器是第一个实践场景，不是项目的边界。我们希望继续探索工具选择、工作流分支等需要 LLM 决策的环节，研究 Jev 在哪里能发挥作用，以及如何与现有智能体协作。
+The browser is our first application, not the boundary of the project. We want to explore other LLM-driven decisions, such as tool selection and workflow branching, and study where Jev can help existing agents.
 
-从真实任务出发，用可复现的实验检验速度与完成质量，再把有效的方法做成可用的模块。
+Start with real tasks. Test speed and task completion through reproducible experiments. Turn what works into usable modules.
 
-有想让它接手的任务？[告诉我们](https://github.com/Tongyun1/Jev-in-the-Loop/issues)。喜欢这个方向？点个 **Star**，一起看下一步。
+Have a task you'd like it to take on? [Tell us](https://github.com/Tongyun1/Jev-in-the-Loop/issues). Interested in the direction? **Star the repo** and follow what comes next.
 
 ---
 
-[开发指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md) · [安全与隐私](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/SECURITY.md) · [MIT License](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/LICENSE)
+[Development guide](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md) · [Security & privacy](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/SECURITY.md) · [MIT License](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/LICENSE)
 
-基于 [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) 构建，感谢上游项目。详见 [第三方声明](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md)。
+Built on [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast), with thanks to the upstream project. See [third-party notices](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md).

@@ -10,9 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins/jev-browser-plugin"
 PROJECT_FILES = (
-    "README.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+    "README.md", "README_ZH.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
     ".gitignore", ".github/workflows/offline.yml", "docs/STRUCTURE.md", "docs/RELEASING.md",
     "scripts/package_source.py", "docs/media/hero-browser.png",
+    "scripts/render_readme_demo.py", "docs/media/demo-hotel.gif", "docs/media/demo-course.gif",
+    "docs/media/README.md",
 )
 
 
