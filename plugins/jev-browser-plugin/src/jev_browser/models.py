@@ -24,7 +24,7 @@ class Condition(StrictModel):
     source: Literal["text", "url", "title", "value", "checked", "selected", "action"]
     expected: Annotated[str, Field(min_length=1, max_length=1000)]
     label: Annotated[str, Field(max_length=300)] = ""
-    match: Literal["exact", "contains"] = "exact"
+    match: Literal["exact", "contains", "line"] = "exact"
 
     @model_validator(mode="after")
     def require_label(self):
@@ -32,7 +32,21 @@ class Condition(StrictModel):
             raise ValueError("control conditions require an exact accessible label")
         if not self.expected.strip():
             raise ValueError("condition must be nonblank")
+        if self.match == "line" and self.source != "text":
+            raise ValueError("line matching is only supported for page text")
         return self
+
+
+def require_completion_evidence(conditions):
+    """Substring text and action history alone cannot certify task completion."""
+    if conditions and not any(
+        c.source != "action" and not (c.source in {"text", "title"} and c.match == "contains")
+        for c in conditions
+    ):
+        raise ValueError(
+            "completion requires URL/control evidence or exact/line text; "
+            "text/title substrings and action history alone are insufficient"
+        )
 
 
 class Transition(StrictModel):
@@ -49,6 +63,7 @@ class Stage(StrictModel):
 
     @model_validator(mode="after")
     def unique_transitions(self):
+        require_completion_evidence(self.complete_when)
         labels = [t.after_label for t in self.transitions]
         if len(labels) != len(set(labels)):
             raise ValueError("transition labels must be unique within a stage")
@@ -110,6 +125,7 @@ class RunRequest(StrictModel):
 
     @model_validator(mode="after")
     def unique_text_ids(self):
+        require_completion_evidence(self.success_when)
         ids = [item.id for item in self.text_values]
         if len(ids) != len(set(ids)):
             raise ValueError("text value IDs must be unique")

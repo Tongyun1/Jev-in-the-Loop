@@ -25,12 +25,18 @@ Goals, supplied values, visible text, and control state go to TypeSafe. Use publ
 For multi-stage tasks, supply `stages`: each has a current `goal`, nonempty `complete_when`,
 and optional `transitions`. The core contains no site-specific business logic.
 
-Conditions have `source`, `expected`, optional `label`, and `match` (`exact` default or `contains`).
+Conditions have `source`, `expected`, optional `label`, and `match` (`exact` default, `contains`,
+or `line`). `line` applies only to page text and matches a complete normalized text line.
 Sources: `url`, `title`, `text`, `value`, `checked`, `selected`, `action`.
 Control state conditions require the exact accessible `label` and fail if that label is ambiguous.
 `checked`/`selected` use string values such as `"true"`. `action` matches an actually executed label;
 in stage conditions it only considers that stage's history. Never use action history alone as proof
 of outcome. Prefer exact control values plus result URL/title over broad keyword matches.
+Stage completion and final success must contain URL/control evidence or exact/line text evidence;
+text/title substrings and action history alone are rejected. A `Guest` substring also matches
+`Guest Reviews` and does not prove a reservation page. Use an observed reservation URL or a
+specific heading such as `Guest details` with `match: "line"`; stop before transmitting form data.
+Use separate search/detail/room-selection stages so completed searches are not replayed.
 
 A transition has `after_label` (exact action label), optional `require_before` (all must match before
 execution), `until` (all must match afterward), and `timeout_ms` (100–10000, default 3000).
@@ -50,7 +56,7 @@ Example stage for a public catalog (adapt labels to the observed site, do not gu
 {
   "goal": "Search the catalog for logic",
   "complete_when": [
-    {"source": "text", "expected": "Results for logic", "match": "contains"},
+    {"source": "text", "expected": "Results for logic", "match": "line"},
     {"source": "action", "expected": "Search"}
   ],
   "transitions": [{
@@ -67,6 +73,9 @@ Example stage for a public catalog (adapt labels to the observed site, do not gu
 - `unverified`: model claimed completion without sufficient local evidence; do not claim success.
 - `needs_text` / `blocked`: use `jev_resume` with returned `session_id` and additional safe
   `text_values` when this resolves the pause. Same tab, stages, domains and boundaries are retained.
+  Repeated state/action/result paths are excluded at that state, including open/close cycles;
+  the model can choose alternatives or scroll. Numeric stepper controls include their group context
+  and current value. Do not interpret decorative text changes or a return to an old state as progress.
 - `safety_stop`: return control to the user; do not bypass through another tool or fresh run.
 - `error`: execution may be uncertain. Inspect before retrying; no automatic replay/resume.
 

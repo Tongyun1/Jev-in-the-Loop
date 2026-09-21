@@ -320,3 +320,119 @@ def test_cycle_detector_allows_different_query_or_field():
     assert agent.fill_clear_cycle([fill, clear, fill, clear])
     assert not agent.fill_clear_cycle([fill, clear, record("fill", 1, "algebra"), clear])
     assert not agent.fill_clear_cycle([fill, clear, record("fill", 3, "logic"), clear])
+
+
+def test_repeated_price_is_removed_despite_changing_countdown(monkeypatch):
+    price = decision("Current price SGD 47")["action"]
+    scroll = dict(id="scroll_down", kind="scroll", label="Scroll down", delta=560)
+    FakeBrowser.pages = [
+        {**page(f"countdown {i}"), "actions": [price, scroll], "scroll": {"y": 0}} for i in range(3)
+    ] + [page("Rooms ready")]
+    offered = []
+
+    def choose(p, *args):
+        offered.append([a["label"] for a in p["actions"]])
+        if price in p["actions"]:
+            return decision(price["label"])
+        return {**decision(operation="SCROLL_DOWN"), "action": scroll}
+
+    monkeypatch.setattr(agent, "choose", choose)
+    result = agent.run(request(success_when=[condition(expected="Rooms ready")]), SETTINGS)
+    assert result["status"] == "done" and result["steps"] == 3
+    assert price["label"] not in offered[-1]
+    assert result["history"][-1]["kind"] == "scroll"
+
+
+def test_repeat_filter_survives_resume_and_allows_control_progress(monkeypatch):
+    price = decision("Price")["action"]
+    FakeBrowser.pages = [{**page(f"timer {i}"), "actions": [price]} for i in range(3)]
+    monkeypatch.setattr(agent, "choose", lambda *a: decision("Price"))
+    first = agent.run(request(max_steps=2), SETTINGS)
+    second = agent.resume(ResumeRequest(session_id=first["session_id"]), SETTINGS)
+    assert second["status"] == "blocked" and second["steps_this_run"] == 0
+    # A real form change makes the same control eligible again.
+    FakeBrowser.instances[0].current["controls"] = [dict(label="Guests", value="3")]
+    third = agent.resume(ResumeRequest(session_id=first["session_id"], max_steps=1), SETTINGS)
+    assert third["steps_this_run"] == 1
+
+
+def test_completion_rejects_substring_or_action_only_evidence():
+    from pydantic import ValidationError
+
+    for conditions in (
+        [condition(expected="Guest", match="contains")],
+        [condition("action", "Book")],
+        [condition(expected="Guest", match="contains"), condition("action", "Book")],
+    ):
+        with pytest.raises(ValidationError, match="completion requires"):
+            request(stages=[dict(goal="Open reservation", complete_when=conditions)])
+        with pytest.raises(ValidationError, match="completion requires"):
+            request(success_when=conditions)
+    # Broad text can supplement independent evidence, and conservative stop rules stay valid.
+    request(
+        success_when=[
+            condition("url", "/booking/", match="contains"),
+            condition(expected="Guest", match="contains"),
+        ]
+    )
+    request(stop_when=[condition(expected="Guest", match="contains")])
+
+
+def test_exact_text_line_distinguishes_reviews_from_guest_form():
+    c = Condition(source="text", expected="Guest details", match="line")
+    assert not matches(c, page("Guest Reviews\nGuest details and reviews"), [])
+    assert matches(c, page("Reservation\n  Guest   details  \nContact details"), [])
+    assert not matches(Condition(source="text", expected="Guest", match="line"), page("Guest Reviews"), [])
+
+
+def test_guest_reviews_never_complete_booking_stage(monkeypatch):
+    FakeBrowser.pages = [page("Rooms\nGuest Reviews\nPolicies")]
+    monkeypatch.setattr(agent, "choose", lambda *a: decision(operation="DONE"))
+    result = agent.run(
+        request(
+            stages=[
+                dict(
+                    goal="Open reservation", complete_when=[condition(expected="Guest details", match="line")]
+                )
+            ]
+        ),
+        SETTINGS,
+    )
+    assert result["status"] == "unverified" and result["stage_index"] == 0
+
+
+def test_open_close_loop_offers_alternative_after_two_round_trips(monkeypatch):
+    opening = decision("Open guests")["action"]
+    closing = decision("Close guests")["action"]
+    search = {**decision("Search")["action"], "node": 3}
+    closed = {**page("closed"), "actions": [opening, search]}
+    opened = {**page("opened"), "actions": [closing]}
+    FakeBrowser.pages = [closed, opened, closed, opened, closed, page("result")]
+
+    def choose(p, *args):
+        action = p["actions"][0]
+        return {**decision(action["label"]), "action": action}
+
+    monkeypatch.setattr(agent, "choose", choose)
+    result = agent.run(request(success_when=[condition()]), SETTINGS)
+    assert result["status"] == "done" and result["steps"] == 5
+    assert result["history"][-1]["action"] == "Search"
+    assert result["history"][3]["repeated_edge"]
+
+
+def test_already_equal_fill_is_not_executed_and_click_remains(monkeypatch):
+    fill = {**decision("Query", "fill")["action"], "value": "logic"}
+    search = {**decision("Search")["action"], "node": 2}
+    FakeBrowser.pages = [{**page(), "actions": [fill, search]}, page("result")]
+
+    def choose(p, *args):
+        a = p["actions"][0]
+        return {**decision(a["label"], a["kind"], text_choice="q"), "action": a}
+
+    monkeypatch.setattr(agent, "choose", choose)
+    result = agent.run(
+        request(success_when=[condition()], text_values=[dict(id="q", field="Query", value="logic")]),
+        SETTINGS,
+    )
+    assert result["status"] == "done" and result["steps"] == 1
+    assert result["history"][0]["action"] == "Search"

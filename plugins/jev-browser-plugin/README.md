@@ -90,6 +90,13 @@ uv run python scripts/install_local.py
 `stages`、`success_when` 和 `stop_when`。具体参数与通用例子见
 [技能说明](skills/jev-browser/SKILL.md)。默认仅允许起始 hostname 及其子域名。
 
+完成条件必须包含 URL、控件状态或精确文本证据；仅有文本子串或点击历史会被拒绝。
+`match: "line"` 可匹配完整的页面文本行，例如 `Guest details`，避免将 `Guest Reviews`
+误认为住客信息页。仍需根据实际页面选择有区分度的条件，不能仅凭通用词判断完成。
+执行器记录“页面状态→动作→结果状态”，重复走过的路径会从当前候选项中排除，
+包括弹窗打开/关闭的往返循环；改变人数等有效状态变化不受影响。装饰性文字变化不算进展。
+观察层为可识别的加减控件提供分组名称和当前值，不将数字或外层容器误作操作按钮。
+
 `done` 表示调用者定义的本地条件通过，不是模型自己声称完成。没有完成证据则返回
 `unverified`；缺文本/不能推进返回 `needs_text`/`blocked`；命中边界返回 `safety_stop`。
 错误可能代表动作状态不确定，不自动重试。`keep_open: false` 不支持暂停后继续。

@@ -20,6 +20,8 @@ def matches(condition, page, history):
             return False
         values = [controls[0].get(source, "")]
     expected = normalize(condition.expected)
+    if condition.match == "line":
+        return any(expected == normalize(line) for v in values for line in str(v).splitlines())
     return any(
         expected == normalize(v) if condition.match == "exact" else expected in normalize(v) for v in values
     )

@@ -62,7 +62,7 @@ def action_space(actions):
             indices[node] = index
             element = {
                 key: action[key]
-                for key in ("role", "value", "checked", "selected", "expanded")
+                for key in ("role", "value", "checked", "selected", "expanded", "context", "current_value")
                 if key in action
             }
             element.update(index=index, label=action["label"].split(" → ")[0], operations=[])
@@ -113,7 +113,7 @@ def choose(page, goal, history, text_values, settings):
                     "current_value": action.get("current_value", action.get("value", "")),
                     **{
                         key: action[key]
-                        for key in ("role", "checked", "selected", "expanded")
+                        for key in ("role", "checked", "selected", "expanded", "context")
                         if key in action
                     },
                 }
@@ -134,7 +134,17 @@ def choose(page, goal, history, text_values, settings):
             "page": {key: page.get(key) for key in ("url", "title", "text", "scroll")},
             "elements": elements,
             "recent_actions": [
-                {key: item.get(key) for key in ("action", "kind", "text", "page_changed")}
+                {
+                    key: item.get(key)
+                    for key in (
+                        "action",
+                        "kind",
+                        "text_value_id",
+                        "page_changed",
+                        "state_transition",
+                        "repeated_edge",
+                    )
+                }
                 for item in history[-10:]
             ],
         },

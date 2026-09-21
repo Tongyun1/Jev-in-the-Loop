@@ -39,6 +39,8 @@ def website():
             data = b"<title>Preview</title><p>Preview ready</p>" if self.path == "/child" else html
             if self.path == "/private":
                 data = b'<label>Password<input type="password" value="secret-fixture"></label>'
+            if self.path == "/hotel-flow":
+                data = Path(__file__).with_name("hotel-flow.html").read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
@@ -88,7 +90,7 @@ def test_real_search_filter_tabs_popup(monkeypatch, website):
                 stages=[
                     dict(
                         goal="Search logic",
-                        complete_when=[dict(source="text", expected="Results for logic", match="contains")],
+                        complete_when=[dict(source="text", expected="Results for logic", match="line")],
                         transitions=[
                             dict(
                                 after_label="Search",
@@ -196,5 +198,69 @@ def test_search_icons_are_distinct_and_explicit_names_win(website):
         search = next(a for a in page["actions"] if a["label"] == "Search")
         browser.act(search, page)
         assert browser.observe()["title"] == "searched"
+    finally:
+        browser.close()
+
+
+def test_price_repeat_recovers_by_scrolling_to_reservation(monkeypatch, website):
+    observed_text = []
+
+    def choose(page, *args):
+        observed_text.append(page["text"])
+        actions = page["actions"]
+        action = next((a for a in actions if a["label"] == "Current price SGD 47"), None)
+        if action is None:
+            action = next((a for a in actions if a["label"] == "Reserve room"), None)
+        if action is None:
+            action = next(a for a in actions if a["id"] == "scroll_down")
+        return dict(
+            operation="SCROLL_DOWN" if action["kind"] == "scroll" else "CLICK",
+            action=action,
+            text_choice=None,
+            latency_ms=0,
+        )
+
+    monkeypatch.setattr(agent, "choose", choose)
+    result = agent.run(
+        RunRequest.model_validate(
+            dict(
+                url=website + "/hotel-flow",
+                goal="Open reservation; stop before entering guest data",
+                max_steps=8,
+                keep_open=False,
+                stop_when=[dict(source="text", expected="Guest details", match="line")],
+            )
+        ),
+        Settings(api_key="test"),
+    )
+    assert result["status"] == "safety_stop", result
+    labels = [h["action"] for h in result["history"]]
+    assert labels.count("Current price SGD 47") == 2
+    assert "Scroll down" in labels and labels[-1] == "Reserve room"
+    assert all("Guest details" not in text for text in observed_text)
+    assert not result["tab_kept_open"]
+
+
+def test_pointer_stepper_icons_have_context_and_numeric_state(website):
+    browser = Browser(website, visible=True)
+    try:
+        browser.evaluate("""document.body.innerHTML = `<div role="button" aria-expanded="true">
+          <div><div>Adults<span>18 years or above</span></div>
+          <div tabindex="0" style="cursor:pointer">
+            <i aria-hidden="true" class="icon-minusline" onclick="this.nextElementSibling.textContent--"></i>
+            <span>1</span>
+            <i aria-hidden="true" class="icon-plusline"
+               onclick="this.previousElementSibling.textContent++"></i>
+          </div></div></div>
+          <div aria-hidden="true"><button>Hidden action</button></div>
+          <style>i{display:inline-block;width:24px;height:30px;cursor:pointer}</style>`""")
+        page = browser.observe()
+        increase = next(a for a in page["actions"] if a["label"].startswith("Increase Adults"))
+        assert increase["current_value"] == "1"
+        assert not any(a["label"] in {"1", "Hidden action"} for a in page["actions"])
+        assert len([c for c in page["controls"] if c["role"] == "spinbutton"]) == 1
+        browser.act(increase, page)
+        after = browser.observe()
+        assert next(c for c in after["controls"] if c["role"] == "spinbutton")["value"] == "2"
     finally:
         browser.close()

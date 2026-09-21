@@ -10,6 +10,9 @@ its matching autocomplete suggestion selected. For date pickers, click the field
 necessary confirmation. For free-text search, submit with Search or PRESS_ENTER; autocomplete
 is optional unless the task requires selecting a specific entity. Do not click unrelated profile links.
 Scroll down to find content below the fold before declaring BLOCKED. Set every requested filter.
+Price text and room photos are not necessarily booking controls. If clicking an element does not
+advance the goal, choose a different observed control or scroll instead of repeatedly clicking it.
+Opening and closing the same detail popup is not progress. Reviews are not guest-information forms.
 If Search or Submit is visible and required
 fields are ready, click it. WAIT only when a needed control is absent or results are loading.
 Prefer a useful visible control over WAIT. DONE requires visible evidence that all requirements

@@ -7,8 +7,12 @@
   };
   for (const [id,e] of cache.nodes) if (!e.isConnected) cache.nodes.delete(id);
   const safe = e => !['password','file','hidden'].includes(e.type);
-  const visible = e => !e.closest('[aria-hidden="true"],[inert]') &&
+  const rendered = e => !e.closest('[inert]') &&
     e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+  const steppers=new Map();
+  const visible = e => rendered(e) && (steppers.has(e)
+    ? !e.parentElement.closest('[aria-hidden="true"]')
+    : !e.closest('[aria-hidden="true"]'));
   const name = (e,seen=new Set()) => {
     if (!e || seen.has(e)) return '';
     seen.add(e);
@@ -26,11 +30,48 @@
   const selector='a[href],button,input,textarea,select,summary,[contenteditable="true"],[onclick],[tabindex],'+
     roles.map(role=>'[role="'+role+'"]').join(',');
   const candidates=new Set(document.querySelectorAll(selector));
+  // Some visual steppers expose only a focusable group; +/- icons are aria-hidden.
+  // Recover only paired, pointer-operated icons around an observed numeric value,
+  // never arbitrary hidden elements or decorative icons inside real buttons.
+  const direction=e=>{
+    const tokens=String(e.getAttribute('class')||'').toLowerCase().split(/[^a-z]+/);
+    const text=e.textContent.trim();
+    if (text==='+' || tokens.some(t=>['plus','plusline','increment','increase','add'].includes(t))) return 1;
+    if (['−','-','–'].includes(text) || tokens.some(t=>['minus','minusline','decrement','decrease'].includes(t))) return -1;
+    return 0;
+  };
+  for (const group of document.querySelectorAll('[tabindex],[role="group"]')) {
+    if (!rendered(group) || group.closest('[aria-hidden="true"],button,a') ||
+        group.matches('[role="button"]')) continue;
+    const children=[...group.children], icons=children.filter(e=>direction(e) &&
+      rendered(e) && getComputedStyle(e).cursor==='pointer' && e.getBoundingClientRect().width>0);
+    const number=children.find(e=>!icons.includes(e) && /^\d+$/.test(e.textContent.trim()));
+    if (!number || !icons.some(e=>direction(e)===1) || !icons.some(e=>direction(e)===-1)) continue;
+    const label=group.getAttribute('aria-label') || [...group.parentElement.children]
+      .filter(e=>e!==group && visible(e)).map(e=>name(e)).filter(Boolean).join(' ').trim();
+    if (!label || label.length>150) continue;
+    const value=number.textContent.trim();
+    for (const icon of icons) {
+      steppers.set(icon,{label:(direction(icon)>0?'Increase ':'Decrease ')+label,
+        context:label,current_value:value,stepper:label,control_node:identity(group)});
+      candidates.add(icon);
+    }
+    candidates.delete(group);
+  }
   for (const e of document.querySelectorAll('div,span')) {
     const r=e.getBoundingClientRect();
     if(r.width>0 && r.height>0 && r.width<600 && r.height<160 && r.bottom>0 && r.top<innerHeight &&
       getComputedStyle(e).cursor==='pointer' && getComputedStyle(e.parentElement).cursor!=='pointer' &&
       !e.querySelector(selector)) candidates.add(e);
+  }
+  // Do not expose a container's text/center as a button when its real children act.
+  for (const e of [...candidates]) {
+    if ([...steppers.keys()].some(icon=>e!==icon && e.contains(icon))) {
+      candidates.delete(e); continue;
+    }
+    if (e.matches('button,a,input,textarea,select,summary,[role="button"],[role="link"]')) continue;
+    if (!e.hasAttribute('onclick') && !e.hasAttribute('role') &&
+        [...e.querySelectorAll(selector)].some(child=>candidates.has(child))) candidates.delete(e);
   }
   const inferredName=e=>{
     const icon=e.querySelector('svg title,img[alt]');
@@ -77,24 +118,30 @@
     .filter(e=>e.type!=='hidden' && visible(e) && e.getBoundingClientRect().width>0 &&
       (['password','email','tel'].includes(e.type) || sensitivePattern.test(
         [name(e),e.name,e.id,e.autocomplete].join(' ')))).length;
-  const actions=[], controls=[];
+  const actions=[], controls=[], emittedSteppers=new Set();
   for (const e of candidates) {
     if (!safe(e) || !visible(e) || e.matches(':disabled') || e.closest('[aria-disabled="true"]')) continue;
     const r=e.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2, rname=role(e);
     if (!rname || r.width<=0 || r.height<=0 || x<0 || y<0 || x>=innerWidth || y>=innerHeight) continue;
     if (rname==='gridcell' && e.querySelector('button,[role="button"]')) continue;
-    const label=name(e)||inferredName(e);
+    const stepper=steppers.get(e);
+    const label=stepper?.label||name(e)||inferredName(e);
     if (!label) continue;
-    const base={node:identity(e),role:rname,label,
+    if (!e.contains(document.elementFromPoint(x,y))) continue;
+    const base={node:identity(e),role:rname,label,...(stepper||{}),
       href:e.href||null,rect:{x:r.x,y:r.y,w:r.width,h:r.height}};
     for (const key of ['checked','selected','expanded']) {
       const value=e.getAttribute('aria-'+key);
       if (value!==null) base[key]=value;
     }
     if (['checkbox','radio'].includes(e.type)) base.checked=String(e.checked);
-    controls.push({node:base.node,label:base.label,value:e.tagName==='SELECT' ?
-      [...e.selectedOptions].map(o=>o.label).join(', ') : e.value??'',
-      checked:base.checked??'',selected:base.selected??''});
+    if (!stepper || !emittedSteppers.has(stepper.control_node)) {
+      controls.push({node:stepper?.control_node||base.node,role:stepper?'spinbutton':base.role,
+        label:stepper?.context||base.label,value:stepper?.current_value ?? (e.tagName==='SELECT' ?
+        [...e.selectedOptions].map(o=>o.label).join(', ') : e.value??''),
+        checked:base.checked??'',selected:base.selected??'',expanded:base.expanded??''});
+      if(stepper) emittedSteppers.add(stepper.control_node);
+    }
     if (e.tagName==='SELECT') {
       for (const o of e.options) if (!o.selected && !o.disabled && !o.closest('optgroup[disabled]'))
         actions.push({...base,kind:'select',value:o.value,

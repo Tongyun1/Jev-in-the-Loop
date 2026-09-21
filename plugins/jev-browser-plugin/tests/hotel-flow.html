@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Local reservation fixture</title>
+<h1>Hotel details</h1>
+<p>Guest Reviews</p>
+<button onclick="document.querySelector('#timer').textContent=String(++window.ticks)">Current price SGD 47</button>
+<p id="timer">0</p>
+<div style="height: 900px">Room information below</div>
+<button onclick="document.body.innerHTML='<h1>Guest details</h1><label>Guest name<input autocomplete=given-name></label>'">Reserve room</button>
+<script>window.ticks=0;</script>

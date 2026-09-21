@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from .browser import Browser, StalePage
 from .model import choose
+from .progress import Progress, action_identity, state_identity
 from .safety import action_block_reason, allowed_url, link_block_reason
 from .workflow import safety_boundary, satisfied
 
@@ -24,6 +25,7 @@ class Session:
     lock: object = field(default_factory=threading.Lock)
     touched: float = field(default_factory=time.monotonic)
     recent_controls: list = field(default_factory=list)
+    progress: Progress = field(default_factory=Progress)
 
 
 SESSIONS = {}
@@ -213,7 +215,20 @@ def _execute(key, state, settings, max_steps):
                     f"\nCompleted stages: {state.stage}. CURRENT STAGE ONLY: {stage.goal}"
                     f"\nRequired evidence: {[c.model_dump() for c in stage.complete_when]}"
                 )
-            decision = choose(page, active_goal, history, request.text_values, settings)
+            context = state_identity(page, state.stage)
+            exhausted = state.progress.exhausted(context)
+            model_page = page
+            if exhausted:
+                model_page = {
+                    **page,
+                    "actions": [a for a in page.get("actions", []) if action_identity(a) not in exhausted],
+                }
+                active_goal += (
+                    "\nActions repeating an already explored state transition have been removed. "
+                    "Choose another observed control or scroll to reveal actual actionable options. "
+                    "A changing countdown or price text is not task progress."
+                )
+            decision = choose(model_page, active_goal, history, request.text_values, settings)
             if time.monotonic() >= deadline:
                 return finish("blocked", reason="time budget reached before executing decision")
             operation = decision["operation"]
@@ -231,7 +246,9 @@ def _execute(key, state, settings, max_steps):
                     time.sleep(0.5)
                     page = browser.observe()
                     continue
-                scroll = next((a for a in page.get("actions", []) if a.get("id") == "scroll_down"), None)
+                scroll = next(
+                    (a for a in model_page.get("actions", []) if a.get("id") == "scroll_down"), None
+                )
                 if scroll and exploratory_scrolls < 3:
                     exploratory_scrolls += 1
                     decision = {
@@ -249,6 +266,8 @@ def _execute(key, state, settings, max_steps):
             action = decision["action"]
             if not action:
                 return finish("error", error_code="invalid_decision")
+            if action_identity(action) in exhausted:
+                return finish("blocked", reason="repeated state transition; action not retried")
             reason = action_block_reason(action, request.stop_before) or link_block_reason(action, domains)
             if reason:
                 return finish(
@@ -264,6 +283,12 @@ def _execute(key, state, settings, max_steps):
                         "needs_text", pending_action={"kind": action["kind"], "label": action["label"]}
                     )
                 text = values[choice]
+                if action.get("value") == text:
+                    # Filling an already equal value is not submission/autocomplete selection.
+                    # Keep click/Enter alternatives; do not emit another input event or spend an action.
+                    state.progress.record(context, action, context)
+                    state.progress.record(context, action, context)
+                    continue
             before = page["fingerprint"]
             transition = (
                 next((t for t in stage.transitions if t.after_label == action["label"]), None)
@@ -313,6 +338,7 @@ def _execute(key, state, settings, max_steps):
             state.pending = transition
             page = browser.observe()
             history[-1]["page_changed"] = page["fingerprint"] != before
+            history[-1].update(state.progress.record(context, action, state_identity(page, state.stage)))
             state.recent_controls.append(
                 (
                     action["kind"],
