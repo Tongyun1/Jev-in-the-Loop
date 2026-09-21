@@ -14,7 +14,7 @@
 
 ## Jev-in-the-Loop: Browser
 
-第一个落地场景：**把超高速浏览器操作带进 Codex。** Codex 理解任务、准备输入，Jev 快速选择下一步操作，插件在本地 Chrome 中执行。从搜索到打开目标页面，让点击、输入与跳转连贯推进。
+**一个让浏览器操作超高速运行的 Codex 插件。** Browser 是 Jev-in-the-Loop 的首个模块。安装到 Codex 后，直接交代任务：Codex 理解目标、准备输入，Jev 快速选择下一步操作，插件在本地 Chrome 中执行。从搜索到打开目标页面，让点击、输入与跳转连贯推进。
 
 **Codex 懂你的任务，Jev 加快每一步。** 给你熟悉的助手接上高速浏览器决策循环。沿用现有 Codex，再配置一个 TypeSafe API Key，就完成了模型侧的准备，无需另接文本生成服务。
 
@@ -82,7 +82,7 @@ Codex 把需求变成计划，准备好要输入的文字；Jev 在一次 TypeSa
 
 ### 开始使用
 
-准备好 **Codex、Chrome** 和你的 **TypeSafe API Key**。本地运行环境由 **uv** 管理，包括插件所需的 Python 和依赖。
+将 **Browser 插件安装到 Codex**：准备好 **Codex、Chrome** 和你的 **TypeSafe API Key**。本地运行环境由 **uv** 管理，包括插件所需的 Python 和依赖。
 
 ```sh
 git clone https://github.com/Tongyun1/Jev-in-the-Loop.git

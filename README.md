@@ -14,7 +14,7 @@
 
 ## Jev-in-the-Loop: Browser
 
-Our first application: **ultrafast browser interaction, right inside Codex.** Codex understands the task and prepares the inputs. Jev quickly selects the next action, and the plugin executes it in local Chrome. Searches, clicks, typing, and navigation flow from one step to the next.
+**A Codex plugin for ultrafast browser interaction.** Browser is the first module of Jev-in-the-Loop. Install it in Codex and describe your task: Codex understands the goal and prepares the inputs, Jev quickly selects the next action, and the plugin executes it in local Chrome. Searches, clicks, typing, and navigation flow from one step to the next.
 
 **Your Codex. Jev's speed. One workflow.** Keep the assistant that understands your task, and give its browser work a fast decision loop. Your existing Codex setup plus a TypeSafe API key is all the model setup you need—no additional text-generation service.
 
@@ -82,7 +82,7 @@ Start with a browser task you find yourself doing by hand.
 
 ### Get started
 
-You'll need **Codex, Chrome**, and a **TypeSafe API key**. **uv** manages the local runtime, including Python and the plugin's dependencies.
+Install the **Browser plugin in Codex**. You'll need **Codex, Chrome**, and a **TypeSafe API key**. **uv** manages the local runtime, including Python and the plugin's dependencies.
 
 ```sh
 git clone https://github.com/Tongyun1/Jev-in-the-Loop.git

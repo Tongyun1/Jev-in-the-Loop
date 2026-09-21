@@ -1,8 +1,8 @@
 # Jev-in-the-Loop: Browser
 
-**English** · [简体中文](README_ZH.md) · [Watch the demos](https://github.com/Tongyun1/Jev-in-the-Loop#from-a-prompt-to-the-page-you-want)
+**English** · [简体中文](README_ZH.md) · [Watch the demos](https://github.com/Tongyun1/Jev-in-the-Loop#browser-demos)
 
-**Ultrafast browser actions, right inside Codex.** Give it a task, let Jev handle the actions, and take over at the page you asked for.
+**A Codex plugin for ultrafast browser actions.** Give it a task, let Jev handle the actions, and take over at the page you asked for.
 
 <a id="安装到-codex"></a>
 

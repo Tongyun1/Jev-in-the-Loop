@@ -1,8 +1,8 @@
 # Jev-in-the-Loop: Browser
 
-[English](README.md) · **简体中文** · [观看演示](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/README_ZH.md#从一句话到你要的页面)
+[English](README.md) · **简体中文** · [观看演示](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/README_ZH.md#浏览器演示)
 
-**把超高速浏览器操作带进 Codex。** 说清楚任务，让 Jev 连续操作，在你指定的页面接手。
+**一个让浏览器操作超高速运行的 Codex 插件。** 说清楚任务，让 Jev 连续操作，在你指定的页面接手。
 
 ## 安装到 Codex
 
