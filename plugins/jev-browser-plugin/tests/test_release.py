@@ -65,5 +65,6 @@ def test_release_allowlist_excludes_local_data():
     names = [p.relative_to(root).as_posix() for p in module.release_files(root)]
     assert ".env.example" in names and "LICENSE" in names and ".codex-plugin/plugin.json" in names
     assert "src/jev_browser/snapshot.js" in names and ".mcp.json" in names
+    assert "README_ZH.md" in names and "docs/USAGE.md" in names
     assert not any(n.startswith(("artifacts/", ".venv/", "dist/", "release/")) for n in names)
     assert ".env" not in names and not any("__pycache__" in n for n in names)

@@ -27,7 +27,7 @@ packages = ["src/jev_browser"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/scripts", "/skills", "/.codex-plugin", "/.mcp.json",
-  "/.gitignore", "/.env.example", "/pyproject.toml", "/uv.lock", "/README.md",
+  "/.gitignore", "/.env.example", "/pyproject.toml", "/uv.lock", "/README.md", "/README_ZH.md",
   "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/SECURITY.md", "/CHANGELOG.md", "/docs", "/.github"]
 exclude = ["**/__pycache__", "**/*.pyc"]
 

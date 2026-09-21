@@ -14,6 +14,7 @@ ROOT_FILES = {
     "pyproject.toml",
     "uv.lock",
     "README.md",
+    "README_ZH.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "SECURITY.md",

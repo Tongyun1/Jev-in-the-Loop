@@ -49,14 +49,22 @@ def main():
         ],
         check=True,
     )
-    for folder in (".codex-plugin", "skills", "src"):
+    for folder in (".codex-plugin", "skills", "src", "docs"):
         shutil.copytree(
             root / folder,
             destination / folder,
             dirs_exist_ok=True,
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
         )
-    for filename in ("pyproject.toml", "uv.lock", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"):
+    for filename in (
+        "pyproject.toml",
+        "uv.lock",
+        "README.md",
+        "README_ZH.md",
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md",
+        "SECURITY.md",
+    ):
         shutil.copy2(root / filename, destination / filename)
     (destination / "scripts").mkdir(exist_ok=True)
     shutil.copy2(root / "scripts/launch.sh", destination / "scripts/launch.sh")

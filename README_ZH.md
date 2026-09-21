@@ -12,7 +12,7 @@
 
 **已有 Codex，再接上 Jev 就够了。** 不用另外配置文本生成模型，也不用再申请一份 OpenRouter 或其他文本模型 API Key。
 
-[观看演示](#从一句话到你要的页面) · [开始使用](#开始使用) · [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[观看演示](#从一句话到你要的页面) · [开始使用](#开始使用) · [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
 
 ## 从一句话，到你要的页面
 
@@ -85,7 +85,7 @@ git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
 cd Jev-in-the-Loop/plugins/jev-browser-plugin
 ```
 
-按照 [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
+按照 [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
 
 ## 把 Jev 带进更多决策循环
 

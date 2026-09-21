@@ -12,7 +12,7 @@ Our first application: **ultrafast browser interaction, right inside Codex.** Co
 
 **Already using Codex? Just add Jev.** No additional text-generation model to configure. No extra OpenRouter or other text-model API key.
 
-[Watch the demos](#from-a-prompt-to-the-page-you-want) · [Get started](#get-started) · [Installation guide](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[Watch the demos](#from-a-prompt-to-the-page-you-want) · [Get started](#get-started) · [Installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
 
 ## From a prompt to the page you want
 
@@ -85,7 +85,7 @@ git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
 cd Jev-in-the-Loop/plugins/jev-browser-plugin
 ```
 
-Follow the [installation guide (Chinese)](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) to configure your key, connect Chrome, and install the plugin. Then open a new Codex task and say: **“Use Jev to…”**
+Follow the [installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) to configure your key, connect Chrome, and install the plugin. Then open a new Codex task and say: **“Use Jev to…”**
 
 ## More decisions. More possibilities.
 
