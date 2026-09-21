@@ -1,7 +1,9 @@
 # README demo media
 
-The English and Chinese READMEs use looping GIF previews linked to the original
-uploaded MP4s. Their frame, timer, and progress line are composited together, so
+The English and Chinese READMEs use standalone looping GIF previews, with links
+to the original uploaded MP4s below each image. Do not wrap a GIF in a GitHub
+video-attachment link: GitHub replaces that entire element with a video player.
+Their frame, timer, and progress line are composited together, so
 there is no independent animation or JavaScript to synchronize on GitHub.
 
 | Preview | Uploaded MP4 | Playback | Clock |

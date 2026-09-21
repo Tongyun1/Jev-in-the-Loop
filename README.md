@@ -25,7 +25,7 @@ Our first application: **ultrafast browser interaction, right inside Codex.** Co
 
 Change the destination, search hotels, explore the details, and select a room. A sequence of clicks becomes one continuous flow, stopping at the booking form for you to take over.
 
-<a href="https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273"><img src="docs/media/demo-hotel.gif" alt="Ctrip hotel search and booking-page demo at 3× playback, with a source-time counter" width="100%" /></a>
+<img src="docs/media/demo-hotel.gif" alt="Ctrip hotel search and booking-page demo at 3× playback, with a source-time counter" width="100%" />
 
 [Watch the original MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3× playback** · Timer shows recording elapsed time.
 
@@ -35,7 +35,7 @@ Change the destination, search hotels, explore the details, and select a room. A
 
 Enter the query, submit the search, and open the course. From something you want to learn to the video in front of you.
 
-<a href="https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864"><img src="docs/media/demo-course.gif" alt="Bilibili search for Stanford CS336 and opening the first video at original speed" width="100%" /></a>
+<img src="docs/media/demo-course.gif" alt="Bilibili search for Stanford CS336 and opening the first video at original speed" width="100%" />
 
 [Watch the original MP4](https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864) · **1× playback** · Timer shows recording elapsed time.
 

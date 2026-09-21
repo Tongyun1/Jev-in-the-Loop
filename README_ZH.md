@@ -25,7 +25,7 @@
 
 更换目的地、搜索酒店、查看详情、选择房型。让连续的点击一气呵成，最后停在预订填写页，等你接手。
 
-<a href="https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273"><img src="docs/media/demo-hotel.gif" alt="携程搜索酒店并打开预订页：3 倍速播放，计时器显示录屏经过时间" width="100%" /></a>
+<img src="docs/media/demo-hotel.gif" alt="携程搜索酒店并打开预订页：3 倍速播放，计时器显示录屏经过时间" width="100%" />
 
 [观看原 MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3 倍速播放** · 计时器显示录屏经过时间。
 
@@ -35,7 +35,7 @@
 
 输入关键词、提交搜索、打开课程。从一个学习念头，到眼前的视频页面。
 
-<a href="https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864"><img src="docs/media/demo-course.gif" alt="B 站搜索 Stanford CS336 并打开第一个视频：原速播放" width="100%" /></a>
+<img src="docs/media/demo-course.gif" alt="B 站搜索 Stanford CS336 并打开第一个视频：原速播放" width="100%" />
 
 [观看原 MP4](https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864) · **原速播放** · 计时器显示录屏经过时间。
 

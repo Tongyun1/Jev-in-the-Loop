@@ -108,7 +108,7 @@ def compose(video, theme, t, duration, font):
         font=font["small"],
         fill="#8793A7",
     )
-    # The whole image is a real MP4 link in the README, including this call to action.
+    # Decorative MP4 callout; the actual playback link sits below the standalone GIF.
     draw.rounded_rectangle((875, 872, 1088, 916), radius=9, outline=accent, width=1)
     draw.text((906, 887), "OPEN MP4", font=font["label"], fill=accent)
     draw.line((1017, 902, 1030, 889), fill=accent, width=2)
