@@ -2,6 +2,8 @@
 
 **English** · [简体中文](README_ZH.md)
 
+<img src="docs/media/hero-project.gif" alt="Jev-in-the-Loop — Faster decisions. Faster progress." width="100%" />
+
 ### Faster decisions. Faster progress.
 
 **Jev-in-the-Loop explores how Jev can accelerate tasks that rely on LLM decision-making.** From choosing the next action to moving a workflow forward, we bring Jev into the decision loop to help agents turn intent into results faster.
@@ -10,13 +12,11 @@ Our focus goes beyond the browser. The bigger question is: **which decisions can
 
 Our first application: **ultrafast browser interaction, right inside Codex.** Codex understands the task and prepares the inputs. Jev quickly selects the next action, and the plugin executes it in local Chrome. Searches, clicks, typing, and navigation flow from one step to the next.
 
-**Already using Codex? Just add Jev.** No additional text-generation model to configure. No extra OpenRouter or other text-model API key.
+**Your Codex. Jev's speed. One workflow.** Keep the assistant that understands your task, and give its browser work a fast decision loop. Your existing Codex setup plus a TypeSafe API key is all the model setup you need—no additional text-generation service.
 
 [Watch the demos](#from-a-prompt-to-the-page-you-want) · [Get started](#get-started) · [Installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
 
 ## From a prompt to the page you want
-
-<img src="docs/media/hero-browser.png" alt="Jev-in-the-Loop: Browser — our first module" width="100%" />
 
 ### One prompt. Ready to book.
 
@@ -43,21 +43,21 @@ No need to spell out every click. Say what you want to accomplish, and let the a
 
 ## Fewer clicks for you. More getting done.
 
-**No extra model stack.**
+**Codex brings the context. Jev brings the pace.**
 
-Codex prepares search terms, destinations, and dates. Jev selects actions and inputs based on the page. Keep using your existing Codex setup—just configure a TypeSafe API key for the plugin.
+Codex turns your request into a plan and prepares the words to type. Jev chooses the next action, its target, and the prepared input in one TypeSafe request. Put the assistant you already use and a fast decision model to work together, with no separate text-model API key.
 
-**Stay in Codex.**
+**An upgrade to the workflow you already use.**
 
-Install the plugin and give it a task. No separate workspace or second assistant to switch to.
+Install as a Codex plugin, describe the outcome in your conversation, and watch it unfold in local Chrome. Browser work becomes part of your existing task—from the first instruction to the page you take over.
 
-**Not just fast clicks. Fast workflows.**
+**One request. A whole sequence in motion.**
 
-Search, select, scroll, and navigate within a single plugin call. Jev makes the next decision based on the current page; the execution loop observes the result and moves on. Speed should help finish the task, not just one click.
+Search, select, type, and navigate through multiple stages within a single plugin call. The loop reads the current page, checks progress, and carries the task forward. Paused sessions can resume with their stage and tab progress intact.
 
-**Stop where you choose.**
+**The handoff is part of the task.**
 
-Open video results, reach a hotel booking form, or leave a page ready to explore. You set the goal—and decide when to take over.
+Ask for the result you actually want: a course open and ready to watch, a form ready for review, or a page ready to explore. Set the destination and the stopping point together, so the workflow ends where your next move begins.
 
 ## Give it a task
 

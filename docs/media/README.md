@@ -1,5 +1,13 @@
 # README demo media
 
+The project hero uses `hero-project.gif`: a four-second looping animation with
+static typography and moving decision pulses. The original `hero-project.png`
+is retained. Regenerate with Pillow:
+
+```sh
+python scripts/render_hero_motion.py --input docs/media/hero-project.png --output docs/media/hero-project.gif
+```
+
 The English and Chinese READMEs use standalone looping GIF previews, with links
 to the original uploaded MP4s below each image. Do not wrap a GIF in a GitHub
 video-attachment link: GitHub replaces that entire element with a video player.
@@ -17,7 +25,7 @@ measurements. Both GIFs preserve the supplied videos' playback speed and full
 frame, sample at 10 fps, and add a 0.8-second final hold with the clock frozen.
 
 The dark editorial layout, scene numbers, mint/lavender accents, horizontal
-progress line, and MP4 call to action are rendered by
+progress line, and plain-language titles are rendered by
 [`render_readme_demo.py`](../../scripts/render_readme_demo.py). All browser
 content and existing privacy masks come from the user-supplied recordings.
 

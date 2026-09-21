@@ -12,7 +12,8 @@ PLUGIN = ROOT / "plugins/jev-browser-plugin"
 PROJECT_FILES = (
     "README.md", "README_ZH.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
     ".gitignore", ".github/workflows/offline.yml", "docs/STRUCTURE.md", "docs/RELEASING.md",
-    "scripts/package_source.py", "docs/media/hero-browser.png",
+    "scripts/package_source.py", "docs/media/hero-browser.png", "docs/media/hero-project.png",
+    "scripts/render_hero_motion.py", "docs/media/hero-project.gif",
     "scripts/render_readme_demo.py", "docs/media/demo-hotel.gif", "docs/media/demo-course.gif",
     "docs/media/README.md",
 )

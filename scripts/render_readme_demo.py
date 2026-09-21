@@ -22,14 +22,14 @@ END_HOLD = 0.8
 THEMES = {
     "hotel": {
         "index": "01",
-        "title": "A stay, one prompt away.",
-        "subtitle": "CTRIP  /  KUNMING HOTEL SEARCH",
+        "title": "Search hotels. Open booking.",
+        "subtitle": "CTRIP.COM  /  KUNMING HOTELS",
         "accent": "#A9E8C9",
         "speed": 3,
     },
     "course": {
         "index": "02",
-        "title": "Curiosity. Meet your course.",
+        "title": "Find CS336. Open the video.",
         "subtitle": "BILIBILI  /  STANFORD CS336",
         "accent": "#C3B4FC",
         "speed": 1,
@@ -108,11 +108,6 @@ def compose(video, theme, t, duration, font):
         font=font["small"],
         fill="#8793A7",
     )
-    # Decorative MP4 callout; the actual playback link sits below the standalone GIF.
-    draw.rounded_rectangle((875, 872, 1088, 916), radius=9, outline=accent, width=1)
-    draw.text((906, 887), "OPEN MP4", font=font["label"], fill=accent)
-    draw.line((1017, 902, 1030, 889), fill=accent, width=2)
-    draw.line((1020, 889, 1030, 889, 1030, 899), fill=accent, width=2)
     return canvas
 
 
