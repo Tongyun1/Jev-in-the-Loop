@@ -114,10 +114,19 @@ const EIGHT_SLOT_PATTERNS = {
   sixteenth: [0, 1, 2, 4, 7, 10, 12, 15],
 };
 
+const TICKS_PER_BEAT = 4; // one tick is a musical sixteenth note
+const BAR_TICKS = 16;
+
+function tickAt(beat) {
+  return clamp(Math.round(beat * TICKS_PER_BEAT), 0, BAR_TICKS - 1);
+}
+
+function beatsAt(tick) { return tick / TICKS_PER_BEAT; }
+
 function slotsForCount(family, count) {
   const slots = EIGHT_SLOT_PATTERNS[family] ?? EIGHT_SLOT_PATTERNS.even;
   const wanted = clamp(Math.round(count), 2, 8);
-  return Array.from({ length: wanted }, (_, index) => slots[Math.round(index * (slots.length - 1) / (wanted - 1))] / 4);
+  return Array.from({ length: wanted }, (_, index) => beatsAt(slots[Math.round(index * (slots.length - 1) / (wanted - 1))]));
 }
 
 function notesForCount(degrees, count) {
@@ -197,6 +206,9 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
       rawDegrees = notesForCount(rawDegrees, count);
       offsets = slotsForCount(rhythm.family, count);
     }
+    // All onset locations live on the sixteenth-note grid. The rhythm arrays
+    // are expressive, but timing is never an arbitrary floating-point value.
+    offsets = offsets.map(tickAt).sort((a, b) => a - b).map(beatsAt);
     // Snap strong-beat notes to the planned chord so melody and pad agree.
     const alignedDegrees = rawDegrees.map((degree, index) => (strongBeats.has(offsets[index]) ? snapToChord(scale, degree, triad) : degree));
     let previousMidi = notes.at(-1)?.midi ?? scale.tonic + 4;
@@ -221,17 +233,20 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
     });
     const events = degrees.map((degree, index) => {
       const midi = degreeToMidi(scale, degree);
-      const nextOnset = offsets[index + 1] ?? 4;
-      const span = nextOnset - offsets[index];
-      // Legato, detached notes, and a sustained ending give the same onset
-      // grid different phrasing. Every duration remains inside its bar.
-      const articulation = id === "breathing" ? 1 : id === "question" ? .72 :
-        id === "rhythmic_shift" ? .62 : (bar + index) % 4 === 0 ? .96 : .83;
-      const duration = clamp(span * articulation, .125, Math.min(3.75, 4 - offsets[index]));
+      const onsetTick = tickAt(offsets[index]);
+      const nextTick = index === degrees.length - 1 ? BAR_TICKS : tickAt(offsets[index + 1]);
+      const spanTicks = Math.max(1, nextTick - onsetTick);
+      // A duration is an integer number of sixteenths: 1=16th, 2=8th,
+      // 3=dotted 8th, 4=quarter, 6=dotted quarter, etc. Connected melodic
+      // notes occupy the full gap; short ornaments leave exactly one 16th
+      // of air only when their gap is large enough to make that audible.
+      const detached = ["rhythmic_shift", "ornament"].includes(id);
+      const releaseTick = detached && spanTicks >= 3 ? 1 : 0;
+      const durationTicks = Math.max(1, spanTicks - releaseTick);
+      const duration = beatsAt(durationTicks);
       const accent = offsets[index] % 1 === 0 ? .07 : -.035;
       return {
-        degree, midi, offset: offsets[index],
-        duration,
+        degree, midi, offset: beatsAt(onsetTick), duration, durationTicks,
         velocity: clamp(velocity + accent + (index === degrees.length - 1 ? -.05 : 0), .38, .84),
       };
     });

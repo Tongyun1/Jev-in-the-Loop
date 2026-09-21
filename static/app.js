@@ -389,7 +389,10 @@ async function start() {
   melodyReverb.connect(melodyOutput);
   synth = new Tone.PolySynth(Tone.Synth, {
     oscillator: { type: "triangle" },
-    envelope: { attack: .025, decay: .25, sustain: .28, release: 1.25 },
+    // A sixteenth at 120 BPM is 125 ms. A short attack preserves that pulse,
+    // while a modest release connects adjacent scale steps without smearing a
+    // whole bar together.
+    envelope: { attack: .012, decay: .16, sustain: .42, release: .42 },
   });
   synth.connect(melodyDelay); synth.connect(melodyReverb);
   createChordSynth();

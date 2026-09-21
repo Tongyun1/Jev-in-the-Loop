@@ -10,6 +10,8 @@ for (const candidates of generated) {
   for (const candidate of candidates) {
     assert.ok(candidate.events.every((event) => event.midi >= 55 && event.midi <= 79), "stay in a singable register");
     assert.ok(candidate.events.every((event) => event.offset >= 0 && event.offset < 4 && event.duration > 0), "playable bar timing");
+    assert.ok(candidate.events.every((event) => Number.isInteger(event.offset * 4) && Number.isInteger(event.duration * 4)), "onsets and durations use whole sixteenth-note ticks");
+    assert.ok(candidate.events.every((event) => event.durationTicks === event.duration * 4), "duration ticks match the audible duration");
     assert.ok(candidate.events.slice(1).every((event, index) => event.midi !== candidate.events[index].midi), "separate note attacks do not repeat the same pitch");
     assert.ok(candidate.events.slice(1).every((event, index) => Math.abs(event.midi - candidate.events[index].midi) <= 12), "avoid accidental octave jumps");
   }
