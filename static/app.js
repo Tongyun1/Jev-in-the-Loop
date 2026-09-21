@@ -21,6 +21,7 @@ let synth, melodyReverb, melodyDelay, melodyOutput, chordSynth, chordFilter, cho
 let started = false, barNumber = 0, decisionInFlight = false, decisionGeneration = 0;
 let queuedPhrase = null, currentPhrase = null, queuedHarmony = null, currentHarmony = null, lastChordNotes = [];
 let followingPhrase = null, followingHarmony = null;
+let preparedPhrase = null, preparedHarmony = null, preparedFollowingHarmony = null, preparedForBar = null;
 let notes = [], phraseHistory = [], harmonyHistory = [], energy = .42, micStream, analyser, micTimer;
 let pendingKeyShift = null, pendingShiftAt = Infinity, shiftSource = null; // Applied at the next four-bar boundary.
 let sadMajorBars = 0, brightMinorBars = 0; // Mood-gate patience counters.
@@ -226,22 +227,21 @@ function renderDecision(result, phrase, harmony, nextHarmony, key = currentKey()
   }));
 }
 
-async function requestDecision() {
+async function requestDecision(targetBar = barNumber, destination = "queued") {
   if (decisionInFlight) return;
   decisionInFlight = true;
   const generation = decisionGeneration;
-  const decisionBar = barNumber;
-  const plannedKey = keyForDecision(currentKey(), pendingKeyShift, barNumber, pendingShiftAt);
-  const baseState = { ...stateForDecision(plannedKey), phrase_bars: 2 };
+  const decisionBar = targetBar;
+  const plannedKey = keyForDecision(currentKey(), pendingKeyShift, targetBar, pendingShiftAt);
+  const baseState = { ...stateForDecision(plannedKey), bar: targetBar, phrase_bars: 2 };
   let plan;
   try {
     plan = await postDecision("/plan", { state: baseState });
   } catch {
     plan = { source: "本地节奏规划", counts: [4, 6], rhythms: ["even", "dotted"] };
   }
-  if (generation !== decisionGeneration || decisionBar !== barNumber) {
+  if (generation !== decisionGeneration || (destination === "prepared" ? barNumber > decisionBar : decisionBar !== barNumber)) {
     decisionInFlight = false;
-    if (started) requestDecision();
     return;
   }
   const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: barNumber, history: phraseHistory, plan });
@@ -255,7 +255,7 @@ async function requestDecision() {
     result.source = "连接中断 · 本地音乐规则";
   }
   if (plan.source !== "Jev" && result.source === "Jev") result.source = "Jev · 节奏规划回退";
-  if (generation === decisionGeneration && decisionBar === barNumber) {
+  if (generation === decisionGeneration && (destination === "prepared" ? barNumber <= decisionBar : decisionBar === barNumber)) {
     const selected = choosePlayableCandidate(result, candidates, phraseHistory, decisionBar) ?? candidates[0];
     const harmony = chooseHarmony(result, harmonyCandidates, plannedKey);
     const secondChord = chooseHarmony({ harmony: result.harmony_next, voicing: result.voicing_next }, nextHarmonyCandidates, plannedKey, [...harmonyHistory, harmony]);
@@ -265,7 +265,7 @@ async function requestDecision() {
     // wins; "stay" never cancels a locally queued mood shift.
     if (result.key_shift && result.key_shift !== "stay" && !pendingKeyShift) {
       pendingKeyShift = result.key_shift;
-      pendingShiftAt = (Math.floor(barNumber / 4) + 1) * 4;
+      pendingShiftAt = (Math.floor(decisionBar / 4) + 1) * 4;
       shiftSource = "jev";
     }
     // Local mood gate: if the imagery clearly contradicts the current mode for
@@ -276,17 +276,23 @@ async function requestDecision() {
     const brightContradicts = BRIGHT_IMAGERY.test(image) && mode === "minor";
     if (sadContradicts) sadMajorBars += 1; else sadMajorBars = 0;
     if (brightContradicts) brightMinorBars += 1; else brightMinorBars = 0;
-    if (sadMajorBars >= 3 && !pendingKeyShift) { pendingKeyShift = "relative"; pendingShiftAt = (Math.floor(barNumber / 4) + 1) * 4; shiftSource = "local"; sadMajorBars = 0; }
-    if (brightMinorBars >= 3 && !pendingKeyShift) { pendingKeyShift = "relative"; pendingShiftAt = (Math.floor(barNumber / 4) + 1) * 4; shiftSource = "local"; brightMinorBars = 0; }
+    if (sadMajorBars >= 3 && !pendingKeyShift) { pendingKeyShift = "relative"; pendingShiftAt = (Math.floor(decisionBar / 4) + 1) * 4; shiftSource = "local"; sadMajorBars = 0; }
+    if (brightMinorBars >= 3 && !pendingKeyShift) { pendingKeyShift = "relative"; pendingShiftAt = (Math.floor(decisionBar / 4) + 1) * 4; shiftSource = "local"; brightMinorBars = 0; }
     // Once queued, a key change stays scheduled so the next-bar candidates
     // and the chord heard at the boundary use the same scale.
-    queuedPhrase = selected; // Keep the precise notes evaluated by Jev until the next bar.
-    queuedHarmony = harmony;
-    followingHarmony = nextHarmony;
+    if (destination === "prepared") {
+      preparedPhrase = selected;
+      preparedHarmony = harmony;
+      preparedFollowingHarmony = nextHarmony;
+      preparedForBar = decisionBar;
+    } else {
+      queuedPhrase = selected; // Keep the precise notes evaluated by Jev until the next bar.
+      queuedHarmony = harmony;
+      followingHarmony = nextHarmony;
+    }
     renderDecision(result, selected, harmony, nextHarmony, plannedKey, decisionBar);
   }
   decisionInFlight = false;
-  if ((generation !== decisionGeneration || decisionBar !== barNumber) && started) requestDecision();
 }
 
 function playBar(time) {
@@ -303,9 +309,19 @@ function playBar(time) {
     pendingKeyShift = null;
     pendingShiftAt = Infinity;
   }
+  if (preparedForBar === barNumber) {
+    queuedPhrase = preparedPhrase;
+    queuedHarmony = preparedHarmony;
+    followingHarmony = preparedFollowingHarmony;
+    preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null;
+  }
   const packagePhrase = queuedPhrase;
-  const phrase = packagePhrase?.bars?.[0] ?? followingPhrase ?? (!changedKey ? currentPhrase : null) ?? makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory })[0];
-  const harmony = queuedHarmony ?? followingHarmony ?? (!changedKey ? currentHarmony : null) ?? chooseHarmony({ harmony: "0_triad", voicing: "close" }, buildHarmonyCandidates({ key: currentKey(), bar: barNumber, history: harmonyHistory }));
+  // A missed network deadline must never replay the preceding phrase. A fresh
+  // legal local bar is less disruptive and gives the next prefetch a chance.
+  const emergencyCandidates = makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory });
+  const emergencyPhrase = emergencyCandidates[(barNumber * 5 + phraseHistory.length) % emergencyCandidates.length];
+  const phrase = packagePhrase?.bars?.[0] ?? followingPhrase ?? emergencyPhrase;
+  const harmony = queuedHarmony ?? followingHarmony ?? chooseHarmony({ harmony: "", voicing: "auto" }, buildHarmonyCandidates({ key: currentKey(), bar: barNumber, history: harmonyHistory }));
   if (packagePhrase?.bars) followingPhrase = packagePhrase.bars[1];
   else if (barNumber % 2 === 1) followingPhrase = null;
   if (barNumber % 2 === 1) followingHarmony = null;
@@ -334,7 +350,9 @@ function playBar(time) {
   $("arc").textContent = `${["动机开始", "发展与回应", "转折与对照", "归向句尾"][(barNumber - 1) % 4]} · ${narrativeStage(barNumber - 1)}`;
   $("now-playing").textContent = `正在播放：${harmony.roman} ${VOICING_NAMES[harmony.voicing]} + ${PHRASE_NAMES[phrase.id]} · ${phrase.events.map((event) => noteName(event.midi)).join(" · ")}`;
   updateStats();
-  if (barNumber % 2 === 0) requestDecision();
+  // While the first bar of a pair is sounding, prefetch the pair beginning
+  // after its answering bar. This gives the two serial Jev calls a full bar.
+  if (barNumber % 2 === 1 && !decisionInFlight && preparedForBar === null) requestDecision(barNumber + 1, "prepared");
 }
 
 function stopPlayback(message = "续写已停止。") {
@@ -345,6 +363,10 @@ function stopPlayback(message = "续写已停止。") {
   queuedHarmony = null;
   followingPhrase = null;
   followingHarmony = null;
+  preparedPhrase = null;
+  preparedHarmony = null;
+  preparedFollowingHarmony = null;
+  preparedForBar = null;
   if (transportEventId !== null) Tone.getTransport().clear(transportEventId);
   transportEventId = null;
   Tone.getTransport().stop();
@@ -439,7 +461,7 @@ applyVisualState({ visual_mood: "warm", visual_scene: "aurora", visual_temperatu
 $("start").addEventListener("click", () => start().catch((error) => { $("now-playing").textContent = `启动失败：${error.message}`; started = false; $("start").disabled = false; }));
 $("mic").addEventListener("click", () => toggleMic().catch(() => { $("input-status").textContent = "没有取得麦克风权限；虚拟钢琴仍可使用。"; }));
 $("bpm").addEventListener("change", () => { if (started) Tone.getTransport().bpm.value = currentBpm(); });
-$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; currentHarmony = null; followingPhrase = null; followingHarmony = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
+$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; currentHarmony = null; followingPhrase = null; followingHarmony = null; preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
 $("tone").addEventListener("change", () => { if (started) createChordSynth(); });
 $("melody-volume").addEventListener("input", updateVolumes);
 $("chord-volume").addEventListener("input", updateVolumes);
