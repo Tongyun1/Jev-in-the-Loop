@@ -8,44 +8,28 @@
 
 ## Install in Codex
 
-This source-install guide is for macOS. You'll need **Codex with its CLI and plugin-creator helpers**, **Chrome**, [**uv**](https://docs.astral.sh/uv/getting-started/installation/), and a [**TypeSafe API key**](https://docs.typesafe.ai/introduction). uv manages Python and dependencies; your existing Codex handles text preparation.
+This guide is for macOS. You'll need **Codex with its CLI and plugin support**, **Chrome**, [**uv**](https://docs.astral.sh/uv/getting-started/installation/), and a [**TypeSafe API key**](https://docs.typesafe.ai/introduction). uv manages Python and dependencies; your existing Codex handles text preparation.
 
-### 1. Get the plugin
+### 1. Get the plugin and start setup
 
 ```sh
 git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
 cd Jev-in-the-Loop/plugins/jev-browser-plugin
-uv sync --locked --all-groups --no-editable
+uv run --locked --no-dev --no-editable python scripts/setup.py
 ```
 
-Already cloned it? Start from the plugin directory.
+Already cloned it? Start from the plugin directory. If you received the maintainer's
+`jev-browser-plugin-<version>-codex.zip`, extract it and open
+`Jev-in-the-Loop/plugins/jev-browser-plugin` instead, then run the same `uv run` command.
 
-### 2. Add your Jev key
+### 2. Follow the prompts
 
-```sh
-mkdir -p ~/.config/jev-browser
-cp -n .env.example ~/.config/jev-browser/config.env
-chmod 600 ~/.config/jev-browser/config.env
-open -e ~/.config/jev-browser/config.env
-```
+Paste your TypeSafe API key into the hidden terminal prompt, then open Chrome and
+follow the connection instructions. Setup prepares Python and runtime dependencies,
+saves your key locally with private permissions, and installs the plugin in Codex.
+An existing key is reused. Jev usage is billed by TypeSafe; no additional text-model key is needed.
 
-In the file that opens, fill in `TYPESAFE_API_KEY=` and save. Keep this file local. Jev usage is billed by TypeSafe; no additional text-model API key is needed.
-
-### 3. Connect Chrome and install
-
-Open Chrome, then run:
-
-```sh
-uv run browser-harness --doctor
-```
-
-Follow its connection instructions and allow local remote debugging in Chrome. Then install:
-
-```sh
-uv run python scripts/install_local.py
-```
-
-### 4. Give it a task
+### 3. Give it a task
 
 Open a **new Codex task** with the plugin enabled and say:
 
@@ -55,6 +39,10 @@ Open the first video and leave the page open.
 ```
 
 Codex starts the plugin for you. From here, just describe the outcome.
+
+The marketplace installs a copy into Codex's plugin cache. Keep the extracted or
+cloned folder for future updates. If your CLI does not recognize `codex plugin`,
+update Codex first. The developer helper `scripts/install_local.py` is not needed.
 
 ## Make it yours
 

@@ -6,44 +6,27 @@
 
 ## 安装到 Codex
 
-以下是 **macOS 源码安装流程**。准备好 **Codex 及其 CLI 和 plugin-creator helpers**、**Chrome**、[**uv**](https://docs.astral.sh/uv/getting-started/installation/) 和 [**TypeSafe API Key**](https://docs.typesafe.ai/introduction)。Python 和依赖交给 uv 管理，文本准备交给你现有的 Codex。
+以下流程适用于 **macOS**。准备好**支持插件的 Codex 及其 CLI**、**Chrome**、[**uv**](https://docs.astral.sh/uv/getting-started/installation/) 和 [**TypeSafe API Key**](https://docs.typesafe.ai/introduction)。Python 和依赖交给 uv 管理，文本准备交给你现有的 Codex。
 
-### 1. 下载插件
+### 1. 下载并启动安装向导
 
 ```sh
 git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
 cd Jev-in-the-Loop/plugins/jev-browser-plugin
-uv sync --locked --all-groups --no-editable
+uv run --locked --no-dev --no-editable python scripts/setup.py
 ```
 
-已经克隆过仓库？直接进入插件目录即可。
+已经克隆过仓库？直接进入插件目录即可。如果拿到的是维护者提供的
+`jev-browser-plugin-<版本>-codex.zip`，解压后进入
+`Jev-in-the-Loop/plugins/jev-browser-plugin`，运行相同的 `uv run` 命令即可。
 
-### 2. 填入 Jev 密钥
+### 2. 按提示完成配置
 
-```sh
-mkdir -p ~/.config/jev-browser
-cp -n .env.example ~/.config/jev-browser/config.env
-chmod 600 ~/.config/jev-browser/config.env
-open -e ~/.config/jev-browser/config.env
-```
+在终端的隐藏输入提示中粘贴 TypeSafe API Key，然后打开 Chrome，按提示完成连接。
+向导会自动准备 Python 和运行依赖，以私有权限保存密钥，并将插件安装到 Codex。
+已有密钥会直接复用。Jev 调用由 TypeSafe 计费，无需另外配置文本模型 API Key。
 
-在打开的文件里填好 `TYPESAFE_API_KEY=`，保存。密钥只保留在本地。Jev 调用由 TypeSafe 计费，无需另外配置文本模型 API Key。
-
-### 3. 连接 Chrome，安装插件
-
-打开 Chrome，然后运行：
-
-```sh
-uv run browser-harness --doctor
-```
-
-按提示完成连接，并在 Chrome 中允许本地远程调试。然后安装：
-
-```sh
-uv run python scripts/install_local.py
-```
-
-### 4. 开始使用
+### 3. 开始使用
 
 在 Codex 中**新建任务**，启用插件后说：
 
@@ -53,6 +36,9 @@ uv run python scripts/install_local.py
 ```
 
 Codex 会自动启动插件。之后，直接交代想完成的任务就好。
+
+Codex 会将插件复制到自己的缓存目录。请保留解压或克隆的文件夹以便更新。
+如果 CLI 不认识 `codex plugin`，请先更新 Codex。普通用户无需使用开发脚本 `scripts/install_local.py`。
 
 ## 按你的方式用
 

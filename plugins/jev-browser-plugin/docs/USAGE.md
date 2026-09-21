@@ -10,16 +10,21 @@ Run commands from `plugins/jev-browser-plugin/` in the cloned repository.
 | --- | --- |
 | `uv: command not found` | [Install uv](https://docs.astral.sh/uv/getting-started/installation/) and restart the terminal. |
 | `codex: command not found` | Install or enable the Codex CLI. Check `codex plugin --help` before running the installer. |
-| `plugin-creator helpers unavailable` | The source installer needs the helpers supplied with compatible Codex setups. Ask Codex to install this local directory using plugin-creator; if that skill is unavailable, update/check your Codex setup first. |
+| `plugin-creator helpers unavailable` | This message belongs to the optional developer installer. Use `uv run --locked --no-dev --no-editable python scripts/setup.py` for normal installation. |
 | Chrome is not connected | Run `uv run browser-harness --doctor`, follow its instructions, and approve local remote debugging in Chrome. |
 | Jev reports a configuration error | Check that `~/.config/jev-browser/config.env` contains your TypeSafe key. Restart the plugin service after changing it. |
 | Plugin is not visible in the current task | Start a new Codex task after installation. |
 | “Destination is not managed by this project” | The installer found another plugin at `~/plugins/jev-browser-plugin`. Inspect its origin before updating it; the installer leaves it untouched. |
 
-The source installer uses Codex's personal-marketplace helpers and installs to
-`~/plugins/jev-browser-plugin`. Those helpers are used for installation, not
-normal runs. This repository currently provides a source install, not a public
-marketplace one-click install.
+The setup wizard registers the repository's `jev-in-the-loop` marketplace and
+installs through the Codex CLI. Run it again to continue an interrupted setup;
+an existing key is preserved. The key is stored at `~/.config/jev-browser/config.env`.
+Python and runtime dependencies are prepared by uv. Codex also prepares the installed
+copy's runtime automatically on first launch. Developer/test dependencies are omitted.
+
+For manual installation, run `codex plugin marketplace add ../..` followed by
+`codex plugin add jev-browser-plugin@jev-in-the-loop` from the plugin directory.
+The older `scripts/install_local.py` is a developer-only personal-marketplace helper.
 
 ## Configuration
 

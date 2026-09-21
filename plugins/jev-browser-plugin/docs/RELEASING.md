@@ -5,8 +5,10 @@
    用新的 `--output` 文件名。源码压缩包是 GitHub 上传候选，不是独立 App 安装包。
 3. 确认没有密钥、Cookie、用户日志/截图、私有路径、缓存及历史构建。公开演示必须单独脱敏。
 4. 保留 LICENSE 和 THIRD_PARTY_NOTICES；依赖自己的发行包也有许可证，应随其发行方式保留。
-5. 由维护者指定实际 GitHub 仓库、作者署名及 Codex marketplace 分发方式。当前未配置公共入口；
-   不声称上传仓库后即可直接 `codex plugin add owner/repo`（该命令安装 marketplace 中的插件）。
+5. 项目仓库提供 `.agents/plugins/marketplace.json`，目录名为 `jev-in-the-loop`。
+   对外分发使用仓库根目录 `scripts/prepare_github_release.py` 生成的 `*-codex.zip`，
+   它保留目录配置和 `plugins/jev-browser-plugin` 布局。先注册 marketplace，
+   再安装 `jev-browser-plugin@jev-in-the-loop`，不能直接 `codex plugin add owner/repo`。
 6. 公开说明 Alpha 状态、macOS 验证范围、TypeSafe 费用与数据发送、Chrome remote debugging要求。
 7. 新版本安装到 Codex 后在新任务加载。CI只覆盖离线逻辑；全新机器安装和真实浏览器体验需另行验收。
 
