@@ -1,0 +1,45 @@
+[project]
+name = "jev-browser-plugin"
+version = "0.1.0"
+description = "Jev-in-the-Loop: Browser — Jev browser execution for Codex"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3"]
+requires-python = ">=3.12"
+dependencies = [
+  "browser-harness==0.1.13",
+  "httpx[http2]>=0.28,<1",
+  "mcp>=1.12,<2",
+  "python-dotenv>=1,<2",
+  "pydantic>=2.11,<3",
+]
+
+[project.scripts]
+jev-browser-mcp = "jev_browser.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jev_browser"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/scripts", "/skills", "/.codex-plugin", "/.mcp.json",
+  "/.gitignore", "/.env.example", "/pyproject.toml", "/uv.lock", "/README.md",
+  "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/SECURITY.md", "/CHANGELOG.md", "/docs", "/.github"]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "pyyaml>=6,<7"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

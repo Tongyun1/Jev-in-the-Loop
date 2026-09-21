@@ -1,0 +1,10 @@
+{
+  "url": "http://127.0.0.1:8765/fixture.html",
+  "goal": "Click the button labeled 最后一步 and stop when its result is shown.",
+  "text_values": [],
+  "allowed_domains": ["127.0.0.1"],
+  "stop_before": [],
+  "max_steps": 5,
+  "visible": true,
+  "keep_open": true
+}

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "jev-browser": {
+      "command": "sh",
+      "cwd": ".",
+      "args": ["./scripts/launch.sh"],
+      "env_vars": ["TYPESAFE_API_KEY", "TYPESAFE_MODEL", "JEV_ENV_FILE", "JEV_RUNTIME_ROOT"],
+      "startup_timeout_sec": 120,
+      "tool_timeout_sec": 180
+    }
+  }
+}

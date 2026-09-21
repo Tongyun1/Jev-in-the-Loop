@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>Jev 本地验收页</title>
+<style>body{font:18px system-ui;max-width:850px;margin:40px auto}td,th{padding:16px}button,input{font:inherit;padding:8px}section{margin:24px 0}</style>
+<h1>Jev 浏览器辅助验收</h1>
+<p>纯本地测试数据，不发送表单、不修改真实账号。</p>
+<section><h2>订单列表</h2><table><thead><tr><th>订单</th><th>操作</th></tr></thead>
+<tbody><tr><td>订单 A：蓝色笔记本</td><td><button onclick="show('正在编辑订单 A')">编辑</button></td></tr>
+<tr><td>订单 B：红色背包</td><td><button onclick="show('正在编辑订单 B')">编辑</button></td></tr></tbody></table></section>
+<section><h2>搜索</h2><label>出发地 <input aria-label="出发地" list="cities" oninput="show('出发地：'+this.value)"></label>
+<datalist id="cities"><option value="武汉"><option value="上海"></datalist>
+<label>目的地 <input aria-label="目的地" oninput="show('目的地：'+this.value)"></label>
+<button onclick="show('已搜索')">搜索</button></section>
+<section><h2>筛选</h2><label><input type="checkbox" onchange="show(this.checked?'已启用仅直飞':'已关闭仅直飞')">仅直飞</label>
+<button onclick="show('不应被自动点击')">最后一步</button>
+<button disabled>提交付款</button></section>
+<section><h2>动态区域</h2><div id="dynamic"><button onclick="show('旧目标')">旧目标</button></div>
+<button onclick="updateDynamic()">更新动态区域</button></section>
+<p role="status" id="status">等待操作</p>
+<script>
+function show(text){document.getElementById('status').textContent=text}
+function updateDynamic(){
+  const button=document.createElement('button');button.textContent='新目标';
+  button.onclick=()=>show('新目标');document.getElementById('dynamic').replaceChildren(button);
+  show('页面已更新');
+}
+</script></html>

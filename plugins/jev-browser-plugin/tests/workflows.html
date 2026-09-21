@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Generic browser regression</title>
+<label>Query <input aria-label="Query"></label>
+<button id="search" onclick="this.disabled=true;setTimeout(()=>{document.querySelector('#result').textContent='Results for '+document.querySelector('input').value;this.outerHTML='<button disabled>Search completed</button>'},250)">Search</button>
+<p id="result">No results yet</p>
+<label>Category <select aria-label="Category"><option>All</option><option>Books</option></select></label>
+<label><input type="checkbox" aria-label="Available only">Available only</label>
+<button role="tab" aria-selected="false" onclick="this.setAttribute('aria-selected','true');document.querySelector('#panel').textContent='Specifications ready'">Specifications</button>
+<p id="panel"></p>
+<a href="/child" target="_blank">Open preview</a>
+<form id="generic-search" onsubmit="event.preventDefault();document.querySelector('#keyboard-result').textContent='Keyboard search complete'">
+<input type="search" aria-label="Secondary search" value="logic">
+<div class="search-button" style="cursor:pointer;width:35px;height:30px" onclick="document.querySelector('#keyboard-result').textContent='Icon search complete'"><svg width="20" height="20"><circle cx="9" cy="9" r="6" stroke="black" fill="none"/></svg></div>
+</form><p id="keyboard-result"></p>

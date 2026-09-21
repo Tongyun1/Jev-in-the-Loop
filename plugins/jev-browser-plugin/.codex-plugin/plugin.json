@@ -1,0 +1,19 @@
+{
+  "name": "jev-browser-plugin",
+  "version": "0.1.0",
+  "description": "Jev-in-the-Loop: Browser — Alpha Codex plugin for public-web tasks through Jev and Chrome.",
+  "author": {
+    "name": "Jev-in-the-Loop contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Jev-in-the-Loop: Browser",
+    "shortDescription": "用 Jev 在 Chrome 中高速连续执行网页任务。",
+    "longDescription": "实验性 Codex 插件：通过 Jev 与本地 Chrome CDP 连续执行公开网页任务。需要 TypeSafe API Key 和 Chrome 远程调试。包含启发式停止规则与本地结果核验，不保证任意网站成功或绝对安全。",
+    "developerName": "Jev-in-the-Loop contributors",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": ["使用 Jev 高速模式在 Chrome 中完成网页任务，并在敏感或不可逆操作前停止。"]
+  },
+  "mcpServers": "./.mcp.json"
+}

@@ -1,0 +1,20 @@
+{
+  "url": "https://en.wikipedia.org/wiki/Main_Page",
+  "goal": "Search for Gödel's incompleteness theorems and open the exact Wikipedia article. Stop when the article page is visibly open.",
+  "text_values": [
+    {
+      "id": "article-query",
+      "field": "Wikipedia search field",
+      "value": "Gödel's incompleteness theorems"
+    }
+  ],
+  "allowed_domains": ["wikipedia.org"],
+  "success_when": [
+    {"source": "url", "expected": "/wiki/G%C3%B6del%27s_incompleteness_theorems", "match": "contains"},
+    {"source": "title", "expected": "Gödel's incompleteness theorems", "match": "contains"}
+  ],
+  "stop_before": [],
+  "max_steps": 15,
+  "visible": true,
+  "keep_open": true
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Jev-in-the-Loop: Browser"
+  short_description: "用 Jev 在 Chrome 中连续执行公开网页任务，并核验结果与停止边界。"
+  default_prompt: "使用 $jev-browser 在 Chrome 中完成公开网页任务，并在敏感操作前停止。"
+policy:
+  allow_implicit_invocation: true
