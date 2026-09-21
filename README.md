@@ -1,23 +1,40 @@
-<img src="docs/media/hero-browser.png" alt="Jev-in-the-Loop: Browser — The first module. More to come." width="100%" />
+# Jev-in-the-Loop
 
-# Jev-in-the-Loop: Browser
+### 让需要 LLM 决策的任务，更快一步。
 
-### Codex 负责思考，Jev 负责操作。
+**Jev-in-the-Loop 致力于研究如何用 Jev 加速各类需要 LLM 做决策的任务。** 从选择下一步操作，到推进一段工作流，我们探索把 Jev 引入决策循环，让智能体从理解意图更快地走向完成任务。
 
-搜索酒店、挑选房型、打开预订页。那些原本需要你来回点击的步骤，现在可以从 Codex 里的一句话开始。
+我们的关注点不止于浏览器，而是一个更广泛的问题：**哪些决策可以交给 Jev，让整个任务更快完成？**
 
-**Jev-in-the-Loop: Browser** 把 Jev 的快速网页操作带进你已经在用的 Codex。Codex 理解任务、准备输入，Jev 选择网页操作，插件在本地 Chrome 中执行。
+第一个落地场景是网页操作：Codex 理解任务、准备输入，Jev 选择下一步操作，插件在本地 Chrome 中执行。把你想做的事，说给 Codex，让连续的点击、输入与跳转接着发生。
 
 **已有 Codex，再接上 Jev 就够了。** 不用另外配置文本生成模型，也不用再申请一份 OpenRouter 或其他文本模型 API Key。
 
-[开始使用](#开始使用) · [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[观看演示](#从一句话到你要的页面) · [开始使用](#开始使用) · [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
 
 ## 从一句话，到你要的页面
+
+<img src="docs/media/hero-browser.png" alt="Jev-in-the-Loop: Browser — 项目的首个实践模块" width="100%" />
+
+### 一句话，走到酒店预订页
 
 > 帮我找云南昆明的酒店，10 月 13 日入住，14 日退房，2 位成人。
 > 选好房型，打开预订填写页，留给我确认。
 
-更换目的地、搜索酒店、查看详情、选择房型——这是我们已经在携程跑通的流程。最后停在预订填写页，把下一步交回给你。
+更换目的地、搜索酒店、查看详情、选择房型。让连续的点击一气呵成，最后停在预订填写页，等你接手。
+
+https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273
+
+### 从想学什么，到打开课程
+
+> 在 B 站用英文搜索 Stanford CS336，打开第一个视频。
+
+输入关键词、提交搜索、打开课程。从一个学习念头，到眼前的视频页面。
+
+<!-- DEMO_VIDEO_COURSE: 将下方占位块替换为上传到 GitHub 后生成的 user-attachments 视频 URL，单独成行并保留上下空行。 -->
+> 🎬 **B 站 · 搜索并打开 Stanford CS336**
+>
+> 演示视频即将上线
 
 不必把需求拆成“点击这里，再点击那里”。说清楚想做什么，让操作接着发生。
 
@@ -44,7 +61,7 @@
 找学习资料：
 
 ```text
-用 Jev 在 B 站搜索高等数学教学视频，保留搜索结果页。
+用 Jev 在 B 站用英文搜索 Stanford CS336，打开第一个视频。
 ```
 
 准备一次出行：
@@ -67,11 +84,11 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 
 按照 [安装指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/plugins/jev-browser-plugin/README.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
 
-## Browser，只是开始
+## 把 Jev 带进更多决策循环
 
-网页里藏着太多重复劳动。Browser 是 **Jev-in-the-Loop** 的第一站：让 Jev 从理解一个页面，走向完成一段真实工作。
+浏览器是第一个实践场景，不是项目的边界。我们希望继续探索工具选择、工作流分支等需要 LLM 决策的环节，研究 Jev 在哪里能发挥作用，以及如何与现有智能体协作。
 
-接下来，我们想把这件事带到更多值得自动化的场景。
+从真实任务出发，用可复现的实验检验速度与完成质量，再把有效的方法做成可用的模块。
 
 有想让它接手的任务？[告诉我们](https://github.com/Tongyun1/Jev-in-the-Loop/issues)。喜欢这个方向？点个 **Star**，一起看下一步。
 
