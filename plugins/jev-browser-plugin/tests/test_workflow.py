@@ -85,6 +85,47 @@ def test_control_evidence_is_bound_to_unique_label():
     assert not matches(c, page(controls=[dict(label="Destination", value="Kyoto")] * 2), [])
 
 
+def test_premature_search_is_filtered_then_enabled(monkeypatch):
+    first = page()
+    fill = dict(id="fill", node=1, kind="fill", label="Query", value="", search_input=True)
+    submit = dict(id="submit", node=2, kind="click", label="Search", search_input_node=1)
+    first["actions"] = [fill, submit]
+    second = page("prepared")
+    second["actions"] = [dict(fill, value="logic"), submit]
+    FakeBrowser.pages = [first, second, page("result")]
+
+    def choose(p, *args):
+        # Deliberately prefer premature submission whenever it is offered.
+        action = next((a for a in p["actions"] if a["kind"] == "click"), p["actions"][0])
+        return dict(
+            operation="CLICK" if action["kind"] == "click" else "TYPE_TEXT",
+            action=action,
+            text_choice="q" if action["kind"] == "fill" else None,
+            latency_ms=0,
+        )
+
+    monkeypatch.setattr(agent, "choose", choose)
+    result = agent.run(
+        request(text_values=[dict(id="q", field="Query", value="logic")], success_when=[condition()]),
+        SETTINGS,
+    )
+    assert result["status"] == "done"
+    assert [a[0]["kind"] for a in FakeBrowser.instances[-1].actions] == ["fill", "click"]
+
+
+def test_filtered_submission_cannot_bypass_dispatch_guard(monkeypatch):
+    p = page()
+    submit = dict(id="submit", node=2, kind="click", label="Search", search_input_node=1)
+    p["actions"] = [dict(id="fill", node=1, kind="fill", label="Query", value="", search_input=True), submit]
+    FakeBrowser.pages = [p]
+    monkeypatch.setattr(
+        agent, "choose", lambda *a: dict(operation="CLICK", action=submit, text_choice=None, latency_ms=0)
+    )
+    result = agent.run(request(text_values=[dict(id="q", field="Query", value="logic")]), SETTINGS)
+    assert result["status"] == "blocked"
+    assert not FakeBrowser.instances[-1].actions
+
+
 def test_action_evidence_requires_execution():
     c = Condition.model_validate(condition("action", "Search"))
     assert not matches(c, page(), [dict(action="Search")])

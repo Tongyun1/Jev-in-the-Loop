@@ -74,6 +74,9 @@
         [...e.querySelectorAll(selector)].some(child=>candidates.has(child))) candidates.delete(e);
   }
   const inferredName=e=>{
+    // A visible search input can have neither a label nor a placeholder yet.
+    // Keep it actionable using observed search semantics, not recommendation text.
+    if (isSearchInput(e)) return 'Search query';
     const icon=e.querySelector('svg title,img[alt]');
     if(icon) return icon.textContent || icon.getAttribute('alt');
     const tokens=String(e.className).replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase().split(/[^a-z0-9]+/);
@@ -119,6 +122,16 @@
       (['password','email','tel'].includes(e.type) || sensitivePattern.test(
         [name(e),e.name,e.id,e.autocomplete].join(' ')))).length;
   const actions=[], controls=[], emittedSteppers=new Set();
+  const isSearchInput=e=>e.tagName==='INPUT' &&
+    (e.type==='search' || e.getAttribute('role')==='searchbox' ||
+      /search/i.test([e.id,e.name,e.className,e.closest('form')?.id,e.closest('form')?.className].join(' ')));
+  const searchTarget=e=>{
+    // Never associate by screen proximity or by a global Search label alone.
+    const scope=e.form || e.closest('form,[role="search"]');
+    if (!scope) return null;
+    const fields=[...scope.querySelectorAll('input')].filter(x=>safe(x) && visible(x) && isSearchInput(x));
+    return fields.length===1 ? fields[0] : null;
+  };
   for (const e of candidates) {
     if (!safe(e) || !visible(e) || e.matches(':disabled') || e.closest('[aria-disabled="true"]')) continue;
     const r=e.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2, rname=role(e);
@@ -152,11 +165,15 @@
           (rname==='combobox' && ['INPUT','TEXTAREA'].includes(e.tagName)));
       const value='value' in e ? String(e.value) :
         e.isContentEditable || rname==='combobox' ? e.innerText.trim() : '';
-      actions.push({...base,kind:editable?'fill':'click',value});
+      const target=!editable && /^(search|搜索|搜一下|查询)$/i.test(label.trim()) ? searchTarget(e) : null;
+      actions.push({...base,kind:editable?'fill':'click',value,
+        ...(editable && isSearchInput(e) ? {search_input:true} : {}),
+        ...(target ? {search_input_node:identity(target)} : {})});
       if (editable) actions.push({...base,kind:'click',value,label:'Open '+base.label});
       if (editable && e.tagName==='INPUT' && value &&
           (e.type==='search' || /search/i.test([e.id,e.name,e.className,e.closest('form')?.id,e.closest('form')?.className].join(' '))))
-        actions.push({...base,kind:'press',value,key:'Enter',label:'Search with Enter: '+base.label});
+        actions.push({...base,kind:'press',value,key:'Enter',search_input_node:base.node,
+          label:'Search with Enter: '+base.label});
     }
   }
   const words=[], walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);

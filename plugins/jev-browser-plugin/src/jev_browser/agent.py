@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from .browser import Browser, StalePage
 from .model import choose
 from .progress import Progress, action_identity, state_identity
+from .readiness import unready_actions
 from .safety import action_block_reason, allowed_url, link_block_reason
 from .workflow import safety_boundary, satisfied
 
@@ -228,6 +229,16 @@ def _execute(key, state, settings, max_steps):
                     "Choose another observed control or scroll to reveal actual actionable options. "
                     "A changing countdown or price text is not task progress."
                 )
+            unready = unready_actions(page, request.text_values, stage, history[state.stage_start :])
+            if unready:
+                model_page = {
+                    **model_page,
+                    "actions": [a for a in model_page["actions"] if a["id"] not in unready],
+                }
+                active_goal += (
+                    "\nSubmission actions with unmet local prerequisites have been removed. "
+                    "Prepare the required field values before submitting."
+                )
             decision = choose(model_page, active_goal, history, request.text_values, settings)
             if time.monotonic() >= deadline:
                 return finish("blocked", reason="time budget reached before executing decision")
@@ -266,6 +277,8 @@ def _execute(key, state, settings, max_steps):
             action = decision["action"]
             if not action:
                 return finish("error", error_code="invalid_decision")
+            if action.get("id") in unready:
+                return finish("blocked", reason="action preconditions not verified; no action executed")
             if action_identity(action) in exhausted:
                 return finish("blocked", reason="repeated state transition; action not retried")
             reason = action_block_reason(action, request.stop_before) or link_block_reason(action, domains)

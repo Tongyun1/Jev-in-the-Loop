@@ -173,6 +173,55 @@ def test_background_text_does_not_invalidate_field(website):
         browser.close()
 
 
+def test_search_readiness_uses_form_relation_and_live_value(website):
+    from jev_browser.models import TextValue
+    from jev_browser.readiness import unready_actions
+
+    browser = Browser(website, visible=True)
+    try:
+        browser.evaluate("""document.body.innerHTML = `<button>Search</button>
+          <form role="search" onsubmit="event.preventDefault()">
+          <input type="search" aria-label="Query" value="cached recommendation">
+          <button>Search</button></form>`""")
+        values = [TextValue(id="q", field="Query", value="Stanford CS336")]
+        page = browser.observe()
+        blocked = unready_actions(page, values, None, [])
+        assert len(blocked) == 2  # Associated submit and Enter, not the reveal button.
+        submit = next(a for a in page["actions"] if a["kind"] == "click" and a["id"] in blocked)
+        browser.evaluate("document.querySelector('input').value='Stanford CS336'")
+        assert not browser.fresh(page, submit)
+        page = browser.observe()
+        assert not unready_actions(page, values, None, [])
+        submit = next(a for a in page["actions"] if a.get("search_input_node") and a["kind"] == "click")
+        browser.evaluate("document.querySelector('input').value='changed while deciding'")
+        assert not browser.fresh(page, submit)
+    finally:
+        browser.close()
+
+
+def test_unlabelled_empty_search_input_is_not_omitted(website):
+    from jev_browser.models import TextValue
+    from jev_browser.readiness import unready_actions
+
+    browser = Browser(website, visible=True)
+    try:
+        browser.evaluate("""document.body.innerHTML = `<form id="nav-searchform">
+          <input class="nav-search-input" placeholder="">
+          <div class="nav-search-btn" onclick="void 0" style="width:32px;height:32px"></div>
+          </form>`""")
+        page = browser.observe()
+        field = next(a for a in page["actions"] if a["kind"] == "fill")
+        assert field["label"] == "Search query" and field["value"] == ""
+        submit = next(a for a in page["actions"] if a["label"] == "Search")
+        assert submit["search_input_node"] == field["node"]
+        values = [TextValue(id="q", field="Video search input", value="Stanford CS336")]
+        assert submit["id"] in unready_actions(page, values, None, [])
+        browser.act(field, page, text="Stanford CS336")
+        assert not unready_actions(browser.observe(), values, None, [])
+    finally:
+        browser.close()
+
+
 def test_search_icons_are_distinct_and_explicit_names_win(website):
     browser = Browser(website, visible=True)
     try:
