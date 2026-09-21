@@ -18,7 +18,7 @@
 ### 前置条件
 
 - 支持插件及本地 MCP 的 Codex；仅 macOS 曾做真实浏览器验证，其他平台未验证。
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) 和 Python 3.12+（uv 可管理 Python）。
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)：管理插件所需的 Python 3.12+ 和依赖；正常联网且允许自动下载时，无需另行手动安装 Python。
 - 本机 Chrome 与用户手动允许的 Remote debugging。仅限本机，不公开调试端口。
 - 自己的 TypeSafe API Key，调用可能产生费用。无需额外 OpenAI/browser-use 模型 API Key。
 
