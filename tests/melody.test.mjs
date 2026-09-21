@@ -48,7 +48,7 @@ for (const key of Object.keys(SCALES)) {
 }
 assert.ok(makeMelodyCandidates({ key: "C major", notes: motif, bar: 0 }).find((candidate) => candidate.id === "breathing").events.some((event) => event.duration >= 2), "breathing phrase has a genuine held note");
 for (const key of ["C major", "C minor", "G major", "F minor"]) {
-  const candidates = makeTwoBarCandidates({ key, notes: motif, bar: 2, plan: { counts: [6, 8], rhythms: ["dotted", "sixteenth"] } });
+  const candidates = makeTwoBarCandidates({ key, notes: motif, bar: 2, plan: { profile: "intense", counts: [6, 8], rhythms: ["dotted", "sixteenth"] } });
   assert.equal(candidates.length, 12, `${key} keeps a choice of two-bar sentences`);
   for (const candidate of candidates) {
     assert.equal(candidate.bars.length, 2);
@@ -60,5 +60,11 @@ for (const key of ["C major", "C minor", "G major", "F minor"]) {
     const scale = SCALES[key];
     assert.ok(candidate.events.every((event) => scale.steps.includes(((event.midi - scale.tonic) % 12 + 12) % 12)), "both bars stay in the chosen key");
   }
+}
+const calmCandidates = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 0, plan: { profile: "calm", counts: [8, 7], rhythms: ["sixteenth", "syncopated"] } });
+for (const candidate of calmCandidates) {
+  assert.ok(candidate.bars.every((part) => part.events.length <= 4), "calm profile limits note density");
+  assert.ok(candidate.bars.every((part) => ["even", "dotted"].includes(part.rhythmFamily)), "calm profile excludes busy rhythm families");
+  assert.ok(candidate.bars.every((part) => part.events.slice(1).every((event, index) => Math.abs(event.degree - part.events[index].degree) <= 2)), "calm profile limits melodic leaps");
 }
 console.log("Melody planning checks passed");

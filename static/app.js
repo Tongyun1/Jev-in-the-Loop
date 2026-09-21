@@ -55,6 +55,15 @@ function narrativeStage(bar = barNumber) {
   return parts[Math.min(parts.length - 1, Math.floor((bar % 8) * parts.length / 8))];
 }
 
+function explicitPerformanceProfile() {
+  const text = $("mood").value.toLowerCase();
+  if (/安静|平静|克制|雨|空|quiet|calm/.test(text)) return "calm";
+  if (/神秘|雾|悬|夜|mystery|mysterious/.test(text)) return "mysterious";
+  if (/激昂|愤怒|冲|热烈|rage|intense/.test(text)) return "intense";
+  if (/温暖|温柔|亲密|warm|tender/.test(text)) return "warm";
+  return null;
+}
+
 function audioMetrics() {
   if (!audioAnalyser) return { level: 0 };
   const values = audioAnalyser.getValue();
@@ -238,15 +247,18 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   try {
     plan = await postDecision("/plan", { state: baseState });
   } catch {
-    plan = { source: "本地节奏规划", counts: [4, 6], rhythms: ["even", "dotted"] };
+    plan = { source: "本地节奏规划", profile: "warm", counts: [4, 5], rhythms: ["even", "dotted"] };
   }
+  // Explicit user language is a hard musical constraint. Jev may resolve
+  // ambiguous imagery, but it must not turn “平静” into an intense phrase.
+  plan = { ...plan, profile: explicitPerformanceProfile() ?? plan.profile ?? "warm" };
   if (generation !== decisionGeneration || (destination === "prepared" ? barNumber > decisionBar : decisionBar !== barNumber)) {
     decisionInFlight = false;
     return;
   }
-  const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: barNumber, history: phraseHistory, plan });
-  const harmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: barNumber, history: harmonyHistory });
-  const nextHarmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: barNumber + 1, history: harmonyHistory });
+  const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: decisionBar, history: phraseHistory, plan });
+  const harmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar, history: harmonyHistory });
+  const nextHarmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar + 1, history: harmonyHistory });
   let result;
   try {
     result = await postDecision("/decision", { state: { ...baseState, rhythmic_plan: plan, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) }, candidates: compactCandidates(candidates) });

@@ -40,15 +40,32 @@ RHYTHMS = {
     "sixteenth": "short sixteenth-note ornaments around longer tones",
 }
 
+PERFORMANCE_PROFILES = {
+    "calm": "calm, spacious: 2–4 attacks, mostly held notes and gentle stepwise motion",
+    "warm": "warm, lyrical: 3–5 attacks, connected eighths and a soft long ending",
+    "mysterious": "mysterious, suspended: 3–5 attacks, deliberate offbeats and lingering tension",
+    "intense": "intense, driving: 5–8 attacks, dotted/syncopated/sixteenth movement and stronger accents",
+}
+
+
+def profile_from_image(image: str, energy: float) -> str:
+    if any(word in image for word in ("安静", "克制", "雨", "空", "平静", "quiet", "calm")):
+        return "calm"
+    if any(word in image for word in ("神秘", "雾", "夜", "悬", "mystery", "mysterious")):
+        return "mysterious"
+    if any(word in image for word in ("激昂", "愤怒", "冲", "热烈", "rage", "intense")) or energy > .7:
+        return "intense"
+    return "warm"
+
 
 def fallback_plan(state: dict) -> dict:
     image = str(state.get("current_image", state.get("creative_brief", ""))).lower()
     energy = float(state.get("relative_energy", .45))
-    quiet = any(word in image for word in ("安静", "克制", "雨", "空", "quiet", "calm"))
-    intense = any(word in image for word in ("激昂", "愤怒", "冲", "热烈", "rage", "intense")) or energy > .7
+    profile = profile_from_image(image, energy)
+    quiet, intense = profile == "calm", profile == "intense"
     counts = [3, 4] if quiet else [6, 7] if intense else [4, 6]
     rhythms = ["even", "dotted"] if quiet else ["syncopated", "sixteenth"] if intense else ["dotted", "even"]
-    return {"source": "本地节奏规划", "counts": counts, "rhythms": rhythms, "question_count": 4}
+    return {"source": "本地节奏规划", "profile": profile, "counts": counts, "rhythms": rhythms, "question_count": 5}
 
 
 def ask_plan(state: dict) -> dict:
@@ -60,6 +77,7 @@ def ask_plan(state: dict) -> dict:
         "model": os.environ.get("TYPESAFE_MODEL", "jev-latest"),
         "state": {"music": state},
         "questions": {
+            "performance": {"type": "choice", "instructions": "Choose one performance profile for the next two bars from current_image. This choice governs the legal note count, rhythm families, melodic interval size, note length and velocity. Calm imagery must use calm; do not choose a visually matching profile that contradicts the music.", "criteria": PERFORMANCE_PROFILES},
             "count_first": {"type": "choice", "instructions": "Choose the number of note attacks for the FIRST of two four-beat bars. Use current_image, relative_energy, recent note density, and the user's motif. Calm scenes need space; rising or intense scenes can be busier. Between 2 and 8, choose one number. This is onset count, not note duration.", "criteria": count_criteria},
             "count_second": {"type": "choice", "instructions": "Choose the number of note attacks for the SECOND bar. Make a small, intentional development of the first bar's energy and the current image. Between 2 and 8. This is onset count, not note duration.", "criteria": count_criteria},
             "rhythm_first": {"type": "choice", "instructions": "Choose the timing character for the FIRST bar from the current image and recent motif. Each family permits rests and held notes.", "criteria": RHYTHMS},
@@ -70,11 +88,12 @@ def ask_plan(state: dict) -> dict:
     request = Request("https://api.typesafe.ai/v1/systemone", data=encoded, headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
     with urlopen(request, timeout=6) as response:
         answers = json.load(response)["answers"]
+    profile = answers["performance"]["choice"]
     counts = [int(answers[name]["choice"]) for name in ("count_first", "count_second")]
     rhythms = [answers[name]["choice"] for name in ("rhythm_first", "rhythm_second")]
-    if any(count < 2 or count > 8 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
+    if profile not in PERFORMANCE_PROFILES or any(count < 2 or count > 8 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
         raise ValueError("Jev returned a rhythm plan outside the supplied choices")
-    return {"source": "Jev", "counts": counts, "rhythms": rhythms, "question_count": 4, "context_chars": len(encoded)}
+    return {"source": "Jev", "profile": profile, "counts": counts, "rhythms": rhythms, "question_count": 5, "context_chars": len(encoded)}
 
 
 def fallback(state: dict, candidates: list[dict]) -> dict:

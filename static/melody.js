@@ -107,6 +107,25 @@ export const RHYTHM_FAMILIES = [
   { name: "sixteenth", label: "十六分点缀", grids: [[0, .25, .5, 1.25], [.5, .75, 1.25, 1.75], [0, .5, .75, 1.25, 2.75]] },
 ];
 
+// This is a musical contract, not a visual palette. Every profile constrains
+// the candidates that Jev is allowed to compare.
+export const EMOTION_PROFILES = {
+  calm: { label: "平静", minNotes: 2, maxNotes: 4, rhythms: ["even", "dotted"], maxStep: 2, velocity: -.12, detached: false },
+  warm: { label: "温暖", minNotes: 3, maxNotes: 5, rhythms: ["even", "dotted"], maxStep: 3, velocity: -.03, detached: false },
+  mysterious: { label: "神秘", minNotes: 3, maxNotes: 5, rhythms: ["dotted", "syncopated"], maxStep: 4, velocity: -.04, detached: false },
+  intense: { label: "激昂", minNotes: 5, maxNotes: 8, rhythms: ["dotted", "syncopated", "sixteenth"], maxStep: 5, velocity: .09, detached: true },
+};
+
+function emotionProfile(name) { return EMOTION_PROFILES[name] ?? EMOTION_PROFILES.warm; }
+
+function smoothContour(degrees, maxStep) {
+  return degrees.reduce((line, degree, index) => {
+    if (!index) return [degree];
+    const previous = line.at(-1);
+    return [...line, previous + clamp(degree - previous, -maxStep, maxStep)];
+  }, []);
+}
+
 const EIGHT_SLOT_PATTERNS = {
   even: [0, 2, 4, 6, 8, 10, 12, 14],
   dotted: [0, 3, 6, 8, 11, 13, 14, 15],
@@ -170,8 +189,9 @@ function snapToChord(scale, degree, chordDegrees) {
   return best;
 }
 
-export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null }) {
+export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null, profile: profileName = "warm" }) {
   const scale = SCALES[key] ?? SCALES["C major"];
+  const profile = emotionProfile(profileName);
   const motif = motifFromNotes(scale, notes, bar);
   const lastDegree = midiToDegree(scale, notes.at(-1)?.midi ?? scale.tonic + 4);
   const rehearsalShift = motif.fromSystem ? 0 : [0, 1, -1, 0][motif.stage];
@@ -179,7 +199,8 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
   const triad = bar % 4 === 0 ? [0, 2, 4] : bar % 4 === 1 ? [5, 0, 2] : bar % 4 === 2 ? [3, 5, 0] : [4, 6, 1];
   // Rhythm rotates across families so bars alternate even / dotted /
   // syncopated / sixteenth feels instead of a flat eighth-note grid.
-  const rhythm = rhythmForBar(bar, rhythmFamily);
+  const permittedRhythm = profile.rhythms.includes(rhythmFamily) ? rhythmFamily : profile.rhythms[bar % profile.rhythms.length];
+  const rhythm = rhythmForBar(bar, permittedRhythm);
   const shift = (grid, delta) => grid.map((offset) => Math.min(3.75, Math.max(0, offset + delta)));
   const shapes = [
     ["motif_echo", `保留主题 DNA，结尾换一个方向（${rhythm.label}）`, motifLine(anchor, [...motif.intervals.slice(0, 2), -motif.intervals[2]]), rhythm.grid, .66],
@@ -202,7 +223,8 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
   const strongBeats = new Set([0, 2]);
   return shapes.map(([id, intent, rawDegrees, offsets, velocity]) => {
     if (Number.isFinite(noteCount)) {
-      const count = id === "breathing" ? Math.min(noteCount, 3) : id === "ornament" ? Math.max(noteCount, 5) : noteCount;
+      const requested = clamp(noteCount, profile.minNotes, profile.maxNotes);
+      const count = id === "breathing" ? Math.min(requested, 3) : id === "ornament" ? Math.max(requested, profileName === "intense" ? 5 : profile.minNotes) : requested;
       rawDegrees = notesForCount(rawDegrees, count);
       offsets = slotsForCount(rhythm.family, count);
     }
@@ -210,7 +232,7 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
     // are expressive, but timing is never an arbitrary floating-point value.
     offsets = offsets.map(tickAt).sort((a, b) => a - b).map(beatsAt);
     // Snap strong-beat notes to the planned chord so melody and pad agree.
-    const alignedDegrees = rawDegrees.map((degree, index) => (strongBeats.has(offsets[index]) ? snapToChord(scale, degree, triad) : degree));
+    const alignedDegrees = smoothContour(rawDegrees.map((degree, index) => (strongBeats.has(offsets[index]) ? snapToChord(scale, degree, triad) : degree)), profile.maxStep);
     let previousMidi = notes.at(-1)?.midi ?? scale.tonic + 4;
     const degrees = alignedDegrees.map((degree, index) => {
       let connected = voiceLead(scale, degree, previousMidi);
@@ -240,14 +262,14 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
       // 3=dotted 8th, 4=quarter, 6=dotted quarter, etc. Connected melodic
       // notes occupy the full gap; short ornaments leave exactly one 16th
       // of air only when their gap is large enough to make that audible.
-      const detached = ["rhythmic_shift", "ornament"].includes(id);
+      const detached = profile.detached && ["rhythmic_shift", "ornament"].includes(id);
       const releaseTick = detached && spanTicks >= 3 ? 1 : 0;
       const durationTicks = Math.max(1, spanTicks - releaseTick);
       const duration = beatsAt(durationTicks);
       const accent = offsets[index] % 1 === 0 ? .07 : -.035;
       return {
         degree, midi, offset: beatsAt(onsetTick), duration, durationTicks,
-        velocity: clamp(velocity + accent + (index === degrees.length - 1 ? -.05 : 0), .38, .84),
+        velocity: clamp(velocity + profile.velocity + accent + (index === degrees.length - 1 ? -.05 : 0), .34, .88),
       };
     });
     const signature = events.map((event) => `${event.degree}:${event.offset}`).join("|");
@@ -257,7 +279,7 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
     const rhythmSignature = events.map((event, index) => Math.round(((index === events.length - 1 ? 4 : events[index + 1].offset) - event.offset) * 4)).join(",");
     return {
       id, intent, events, signature, pitchSignature, fingerprint,
-      rhythmFamily: rhythm.family, rhythmLabel: rhythm.label,
+      rhythmFamily: rhythm.family, rhythmLabel: rhythm.label, emotionProfile: profileName,
       intervalSignature, rhythmSignature,
       recent: history.slice(-2).some((entry) => entry.id === id),
       duplicate: recentSignatures.includes(signature),
@@ -275,21 +297,23 @@ const ANSWERING_STYLE = {
 };
 
 export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = null }) {
-  // Present all rhythm families in the same Jev choice. One family per two
-  // bars made the prompt's rhythm guidance ineffective: Jev had no options.
+  const profileName = plan?.profile ?? "warm";
+  const profile = emotionProfile(profileName);
+  // Candidate contrast stays inside the profile's permitted rhythm palette.
+  // A calm request never receives a sixteenth-note candidate to select.
   return Array.from({ length: Object.keys(PHRASE_NAMES).length }, (_, index) => {
     const plannedFamily = plan?.rhythms?.[0];
-    const family = index % 4 === 3 ? RHYTHM_FAMILIES[(Math.floor(bar / 2) + index) % RHYTHM_FAMILIES.length].name
-      : plannedFamily ?? RHYTHM_FAMILIES[(Math.floor(bar / 2) + index) % RHYTHM_FAMILIES.length].name;
-    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0] })[index];
+    const family = index % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + index) % profile.rhythms.length]
+      : profile.rhythms.includes(plannedFamily) ? plannedFamily : profile.rhythms[Math.floor(bar / 2) % profile.rhythms.length];
+    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0], profile: profileName })[index];
     const simulatedNotes = [...notes, ...first.events.map((event) => ({ ...event, origin: "system", bar }))];
-    const answerFamily = index % 4 === 3 ? RHYTHM_FAMILIES[(Math.floor(bar / 2) + index + 1) % RHYTHM_FAMILIES.length].name
-      : plan?.rhythms?.[1] ?? RHYTHM_FAMILIES[(Math.floor(bar / 2) + index + (index % 3 === 0 ? 1 : 0)) % RHYTHM_FAMILIES.length].name;
+    const plannedAnswerFamily = plan?.rhythms?.[1];
+    const answerFamily = index % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + index + 1) % profile.rhythms.length]
+      : profile.rhythms.includes(plannedAnswerFamily) ? plannedAnswerFamily : profile.rhythms[(Math.floor(bar / 2) + 1) % profile.rhythms.length];
     const secondOptions = makeMelodyCandidates({
       key, notes: simulatedNotes, bar: bar + 1,
       history: [...history, first].slice(-PHRASE_HISTORY_BARS),
-      rhythmFamily: answerFamily,
-      noteCount: plan?.counts?.[1],
+      rhythmFamily: answerFamily, noteCount: plan?.counts?.[1], profile: profileName,
     });
     const answerId = (bar + 1) % 4 === 3 ? "cadence" : ANSWERING_STYLE[first.id];
     const second = secondOptions.find((candidate) => candidate.id === answerId) ?? secondOptions[0];
