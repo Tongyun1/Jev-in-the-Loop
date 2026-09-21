@@ -8,17 +8,21 @@
 
 **Jev-in-the-Loop 致力于研究如何用 Jev 加速各类需要 LLM 做决策的任务。** 从选择下一步操作，到推进一段工作流，我们探索把 Jev 引入决策循环，让智能体从理解意图更快地走向完成任务。
 
-我们的关注点不止于浏览器，而是一个更广泛的问题：**哪些决策可以交给 Jev，让整个任务更快完成？**
+**哪些决策可以交给 Jev，让整个任务更快完成？** 每个模块探索一种答案。Browser 是第一个，更多模块将从接下来探索的任务与决策循环中生长出来。
+
+[Browser 模块](#jev-in-the-loop-browser) · [项目方向](#project-direction) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+
+## Jev-in-the-Loop: Browser
 
 第一个落地场景：**把超高速浏览器操作带进 Codex。** Codex 理解任务、准备输入，Jev 快速选择下一步操作，插件在本地 Chrome 中执行。从搜索到打开目标页面，让点击、输入与跳转连贯推进。
 
 **Codex 懂你的任务，Jev 加快每一步。** 给你熟悉的助手接上高速浏览器决策循环。沿用现有 Codex，再配置一个 TypeSafe API Key，就完成了模型侧的准备，无需另接文本生成服务。
 
-[观看演示](#从一句话到你要的页面) · [开始使用](#开始使用) · [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[观看演示](#浏览器演示) · [开始使用](#开始使用) · [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex)
 
-## 从一句话，到你要的页面
+### 浏览器演示
 
-### 一句话，走到酒店预订页
+#### 一句话，走到酒店预订页
 
 > 帮我找云南昆明的酒店，10 月 13 日入住，14 日退房，2 位成人。
 > 选好房型，打开预订填写页，留给我确认。
@@ -29,7 +33,7 @@
 
 [观看原 MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3 倍速播放** · 计时器显示录屏经过时间。
 
-### 从想学什么，到打开课程
+#### 从想学什么，到打开课程
 
 > 在 B 站用英文搜索 Stanford CS336，打开第一个视频。
 
@@ -41,7 +45,7 @@
 
 不必把需求拆成“点击这里，再点击那里”。说清楚想做什么，让操作接着发生。
 
-## 少一点点击，多一点完成
+### ⚡ 少一点点击，多一点完成
 
 **理解交给 Codex，快速决策交给 Jev。**
 
@@ -59,7 +63,7 @@ Codex 把需求变成计划，准备好要输入的文字；Jev 在一次 TypeSa
 
 直接说你要的结果：打开就能看的课程、等待你审核的表单、可以继续探索的页面。把目标和停点一起交代，让自动操作的终点，恰好成为你下一步的起点。
 
-## 给它一个任务
+### 💬 给它一个任务
 
 找学习资料：
 
@@ -76,7 +80,7 @@ Codex 把需求变成计划，准备好要输入的文字；Jev 在一次 TypeSa
 
 从一件你经常需要手动完成的网页任务开始。
 
-## 开始使用
+### 开始使用
 
 准备好 **Codex、Chrome** 和你的 **TypeSafe API Key**。本地运行环境由 **uv** 管理，包括插件所需的 Python 和依赖。
 
@@ -87,7 +91,9 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 
 按照 [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
 
-## 把 Jev 带进更多决策循环
+<a id="project-direction"></a>
+
+## 🔬 把 Jev 带进更多决策循环
 
 浏览器是第一个实践场景，不是项目的边界。我们希望继续探索工具选择、工作流分支等需要 LLM 决策的环节，研究 Jev 在哪里能发挥作用，以及如何与现有智能体协作。
 
@@ -99,4 +105,4 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 
 [开发指南](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md) · [安全与隐私](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/SECURITY.md) · [MIT License](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/LICENSE)
 
-基于 [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) 构建，感谢上游项目。详见 [第三方声明](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md)。
+Browser 模块基于 [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) 构建，感谢上游项目。详见 [第三方声明](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md)。

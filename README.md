@@ -8,17 +8,21 @@
 
 **Jev-in-the-Loop explores how Jev can accelerate tasks that rely on LLM decision-making.** From choosing the next action to moving a workflow forward, we bring Jev into the decision loop to help agents turn intent into results faster.
 
-Our focus goes beyond the browser. The bigger question is: **which decisions can Jev take on to make the whole task faster?**
+**Which decisions can Jev take on to make the whole task faster?** Each module explores a different answer. Browser is the first; more modules will grow from the tasks and decision loops we explore next.
+
+[Browser module](#jev-in-the-loop-browser) · [Project direction](#project-direction) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+
+## Jev-in-the-Loop: Browser
 
 Our first application: **ultrafast browser interaction, right inside Codex.** Codex understands the task and prepares the inputs. Jev quickly selects the next action, and the plugin executes it in local Chrome. Searches, clicks, typing, and navigation flow from one step to the next.
 
 **Your Codex. Jev's speed. One workflow.** Keep the assistant that understands your task, and give its browser work a fast decision loop. Your existing Codex setup plus a TypeSafe API key is all the model setup you need—no additional text-generation service.
 
-[Watch the demos](#from-a-prompt-to-the-page-you-want) · [Get started](#get-started) · [Installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[Watch the demos](#browser-demos) · [Get started](#get-started) · [Installation guide](plugins/jev-browser-plugin/README.md#install-in-codex)
 
-## From a prompt to the page you want
+### Browser demos
 
-### One prompt. Ready to book.
+#### One prompt. Ready to book.
 
 > Find hotels in Kunming, Yunnan, for two adults, checking in October 13 and out October 14.
 > Choose a room and open the booking form. Leave the final confirmation to me.
@@ -29,7 +33,7 @@ Change the destination, search hotels, explore the details, and select a room. A
 
 [Watch the original MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3× playback** · Timer shows recording elapsed time.
 
-### From curiosity to a course
+#### From curiosity to a course
 
 > Search Bilibili in English for Stanford CS336 and open the first video.
 
@@ -41,7 +45,7 @@ Enter the query, submit the search, and open the course. From something you want
 
 No need to spell out every click. Say what you want to accomplish, and let the actions follow.
 
-## Fewer clicks for you. More getting done.
+### ⚡ Fewer clicks for you. More getting done.
 
 **Codex brings the context. Jev brings the pace.**
 
@@ -59,7 +63,7 @@ Search, select, type, and navigate through multiple stages within a single plugi
 
 Ask for the result you actually want: a course open and ready to watch, a form ready for review, or a page ready to explore. Set the destination and the stopping point together, so the workflow ends where your next move begins.
 
-## Give it a task
+### 💬 Give it a task
 
 Find something to learn:
 
@@ -76,7 +80,7 @@ Open a hotel, choose a room, and stop at the booking form. Do not submit an orde
 
 Start with a browser task you find yourself doing by hand.
 
-## Get started
+### Get started
 
 You'll need **Codex, Chrome**, and a **TypeSafe API key**. **uv** manages the local runtime, including Python and the plugin's dependencies.
 
@@ -87,7 +91,9 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 
 Follow the [installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) to configure your key, connect Chrome, and install the plugin. Then open a new Codex task and say: **“Use Jev to…”**
 
-## More decisions. More possibilities.
+<a id="project-direction"></a>
+
+## 🔬 More decisions. More possibilities.
 
 The browser is our first application, not the boundary of the project. We want to explore other LLM-driven decisions, such as tool selection and workflow branching, and study where Jev can help existing agents.
 
@@ -99,4 +105,4 @@ Have a task you'd like it to take on? [Tell us](https://github.com/Tongyun1/Jev-
 
 [Development guide](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md) · [Security & privacy](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/SECURITY.md) · [MIT License](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/LICENSE)
 
-Built on [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast), with thanks to the upstream project. See [third-party notices](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md).
+The Browser module builds on [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast), with thanks to the upstream project. See [third-party notices](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/THIRD_PARTY_NOTICES.md).
