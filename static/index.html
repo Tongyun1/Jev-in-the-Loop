@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jev · 氛围旋律续写</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">JEV × LIVING MELODY</p>
+          <h1>让一句旋律，<br>长成一片氛围。</h1>
+          <p class="lede">弹出一个动机，再用文字描述它的世界。Jev 先规划两小节的音符密度与节奏，再续写完整乐句；球体随着音符呼吸，并随着意境改变颜色与形态。</p>
+          <p class="hero-caption"><span class="live-dot"></span><span id="arc">等待你的动机</span></p>
+        </div>
+        <div class="orb-stage" aria-label="随旋律与情绪变化的三维球体"><div id="orb"></div><div class="orb-hint">SOUND BECOMES FORM</div></div>
+      </header>
+      <section class="controls card">
+        <label>创作描述 <input id="mood" value="雨夜、克制、慢慢变亮" /></label>
+        <label>BPM <input id="bpm" type="number" min="60" max="180" value="120" /></label>
+        <label>调式 <select id="key"></select></label>
+        <label>铺底音色 <select id="tone"><option value="pad">铺底 Pad</option><option value="warm">暖色合成</option><option value="bell">铃音 Bell</option><option value="organ">风琴 Organ</option></select></label>
+        <label class="volume-control">主旋律 <span id="melody-volume-label">0 dB</span><input id="melody-volume" type="range" min="-18" max="6" value="0" step="1" /></label>
+        <label class="volume-control">和弦铺底 <span id="chord-volume-label">-2 dB</span><input id="chord-volume" type="range" min="-18" max="3" value="-2" step="1" /></label>
+        <button id="start">开始续写</button>
+        <button id="mic" class="secondary">打开麦克风力度监听</button>
+      </section>
+      <section class="split">
+        <div class="card piano-wrap">
+          <div class="section-title"><span>输入动机</span><small>当前音阶八音：A S D F G H J K</small></div>
+          <div id="piano" aria-label="虚拟钢琴"></div>
+        <p id="input-status">先弹 3–8 个音建立动机；麦克风可以改变力度与球体呼吸。</p>
+        </div>
+        <div class="card decision">
+          <div class="section-title"><span>下一乐句的选择</span><small id="source">等待开始</small></div>
+          <div class="decision-tags"><span id="decision-key">C 大调</span><span id="decision-emotion">等待情绪</span><span id="decision-rhythm">等待节奏</span></div>
+          <h2 id="choice">—</h2>
+          <p id="decision-why" class="decision-why">Jev 的旋律选择会显示在这里。</p>
+          <p id="planned-notes" class="planned-notes">下一乐句的音符会显示在这里</p>
+          <div class="note-roll-wrap"><div class="roll-ruler"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div><div id="note-roll" class="note-roll" aria-label="下一乐句八拍音符时间线"></div></div>
+          <p class="playing-note">此刻音符：<strong id="playing-note">—</strong></p>
+          <p class="harmony-plan">和声铺底：<strong id="harmony">—</strong></p>
+          <p class="visual-mood">视觉情绪：<strong id="visual-mood">—</strong></p>
+          <div class="confidence"><span>置信度</span><strong id="confidence">—</strong></div>
+          <div id="probabilities" class="probabilities"></div>
+        </div>
+      </section>
+      <section class="card timeline">
+        <div class="section-title"><span>实时状态</span><small id="bar">第 0 小节</small></div>
+        <div class="metrics">
+          <div><span>相对力度</span><strong id="energy">0.45</strong></div>
+          <div><span>音符密度</span><strong id="density">0.00 / beat</strong></div>
+          <div><span>最近音符</span><strong id="notes">—</strong></div>
+          <div><span>本次上下文</span><strong id="context">—</strong></div>
+        </div>
+        <p id="now-playing">系统还没有开始播放。</p>
+      </section>
+      <footer>球体使用 Three.js 与 WebGL 着色器；麦克风负责力度反馈，准确音高由虚拟钢琴输入。</footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
