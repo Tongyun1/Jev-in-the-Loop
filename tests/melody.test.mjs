@@ -48,13 +48,13 @@ for (const key of Object.keys(SCALES)) {
 }
 assert.ok(makeMelodyCandidates({ key: "C major", notes: motif, bar: 0 }).find((candidate) => candidate.id === "breathing").events.some((event) => event.duration >= 2), "breathing phrase has a genuine held note");
 for (const key of ["C major", "C minor", "G major", "F minor"]) {
-  const candidates = makeTwoBarCandidates({ key, notes: motif, bar: 2, plan: { profile: "intense", counts: [6, 8], rhythms: ["dotted", "sixteenth"] } });
+  const candidates = makeTwoBarCandidates({ key, notes: motif, bar: 2, plan: { profile: "intense", counts: [4, 5], rhythms: ["dotted", "sixteenth"] } });
   assert.ok(candidates.length >= 6, `${key} keeps several emotionally legal two-bar sentences`);
   for (const candidate of candidates) {
     assert.equal(candidate.bars.length, 2);
     assert.ok(candidate.bars[1].events.length > 0);
-    if (!["breathing", "ornament"].includes(candidate.id)) assert.equal(candidate.bars[0].events.length, 6, "first bar follows the note-count plan");
-    assert.equal(candidate.bars[1].events.length, 8, "second bar follows the note-count plan");
+    if (!["breathing", "ornament"].includes(candidate.id)) assert.equal(candidate.bars[0].events.length, 4, "first bar follows the note-count plan");
+    assert.equal(candidate.bars[1].events.length, 5, "second bar follows the note-count plan");
     assert.ok(candidate.events.some((event) => event.offset >= 4), "the model sees the answering bar");
     assert.ok(candidate.events.every((event) => event.offset + event.duration <= 8), "a sentence fits its two-bar window");
     const scale = SCALES[key];
@@ -63,8 +63,22 @@ for (const key of ["C major", "C minor", "G major", "F minor"]) {
 }
 const calmCandidates = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 0, plan: { profile: "calm", counts: [8, 7], rhythms: ["sixteenth", "syncopated"] } });
 for (const candidate of calmCandidates) {
-  assert.ok(candidate.bars.every((part) => part.events.length <= 4), "calm profile limits note density");
+  assert.ok(candidate.bars.every((part) => part.events.length <= 3), "calm profile limits note density");
   assert.ok(candidate.bars.every((part) => ["even", "dotted"].includes(part.rhythmFamily)), "calm profile excludes busy rhythm families");
   assert.ok(candidate.bars.every((part) => part.events.slice(1).every((event, index) => Math.abs(event.degree - part.events[index].degree) <= 2)), "calm profile limits melodic leaps");
+}
+const held = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 0, plan: { profile: "calm", counts: [2, 2], rhythms: ["even", "even"] } });
+const heldEcho = held.find((candidate) => candidate.id === "motif_echo");
+const firstHold = heldEcho.bars[0].events.at(-1);
+assert.equal(firstHold.offset, 3, "barline hold starts on a strong beat");
+assert.equal(firstHold.offset + firstHold.duration, 5, "the note sustains through the next bar's downbeat");
+assert.ok(heldEcho.bars[1].events[0].offset >= 1, "the next bar waits until the held note finishes");
+const secondHold = heldEcho.bars[1].events.at(-1);
+const continuation = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 2, plan: { profile: "calm", counts: [2, 2], rhythms: ["even", "even"] }, incomingCarryBeats: Math.max(0, secondHold.offset + secondHold.duration - 4) });
+assert.ok(continuation.every((candidate) => candidate.bars[0].events[0].offset >= 1), "a held note can connect the second bar to the third");
+assert.ok(new Set(held.map((candidate) => candidate.rhythmSignature)).size > 1, "sparse candidates keep different rhythms");
+for (const candidate of held) {
+  assert.ok(candidate.events.slice(1).every((event, index) => candidate.events[index].offset + candidate.events[index].duration <= event.offset), "held notes never collide with the next attack");
+  assert.ok(candidate.bars.every((part) => part.events.slice(1).every((event, index) => event.midi !== part.events[index].midi)), "sparse bars do not retrigger an identical note");
 }
 console.log("Melody planning checks passed");

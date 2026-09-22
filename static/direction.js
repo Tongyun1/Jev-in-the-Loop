@@ -16,7 +16,7 @@ export function normalizePlan(plan = {}, scene = "") {
   const profileName = classifyScene(scene) ?? (EMOTION_PROFILES[plan.profile] ? plan.profile : "warm");
   const profile = EMOTION_PROFILES[profileName];
   const sceneOverridesPlan = Boolean(classifyScene(scene) && plan.profile && plan.profile !== profileName);
-  const defaultCounts = profileName === "calm" ? [2, 3] : profileName === "joyful" ? [6, 7] : profileName === "intense" ? [6, 7] : [3, 4];
+  const defaultCounts = profileName === "calm" ? [2, 2] : profileName === "joyful" ? [4, 5] : profileName === "intense" ? [4, 5] : [2, 3];
   const counts = [0, 1].map((index) => {
     if (sceneOverridesPlan) return defaultCounts[index];
     const raw = Number(plan.counts?.[index]);

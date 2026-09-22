@@ -110,11 +110,11 @@ export const RHYTHM_FAMILIES = [
 // This is a musical contract, not a visual palette. Every profile constrains
 // the candidates that Jev is allowed to compare.
 export const EMOTION_PROFILES = {
-  calm: { label: "平静", minNotes: 2, maxNotes: 4, rhythms: ["even", "dotted"], maxStep: 2, velocity: -.12, detached: false, shapes: ["motif_echo", "retrograde", "question", "answer", "arch", "breathing", "cadence"] },
-  warm: { label: "温暖", minNotes: 3, maxNotes: 5, rhythms: ["even", "dotted"], maxStep: 3, velocity: -.03, detached: false, shapes: ["motif_echo", "inversion", "sequence", "question", "answer", "arch", "breathing", "cadence"] },
-  joyful: { label: "欢快", minNotes: 5, maxNotes: 8, rhythms: ["even", "dotted", "syncopated", "sixteenth"], maxStep: 4, velocity: .06, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "question", "answer", "arch", "leap", "ornament", "cadence"] },
-  mysterious: { label: "神秘", minNotes: 3, maxNotes: 5, rhythms: ["dotted", "syncopated"], maxStep: 4, velocity: -.04, detached: false, shapes: ["inversion", "retrograde", "rhythmic_shift", "question", "breathing", "ornament", "cadence"] },
-  intense: { label: "激昂", minNotes: 5, maxNotes: 8, rhythms: ["dotted", "syncopated", "sixteenth"], maxStep: 5, velocity: .09, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "answer", "arch", "leap", "ornament", "cadence"] },
+  calm: { label: "平静", minNotes: 1, maxNotes: 3, rhythms: ["even", "dotted"], maxStep: 2, velocity: -.12, detached: false, shapes: ["motif_echo", "retrograde", "question", "answer", "arch", "breathing", "cadence"] },
+  warm: { label: "温暖", minNotes: 2, maxNotes: 4, rhythms: ["even", "dotted"], maxStep: 3, velocity: -.03, detached: false, shapes: ["motif_echo", "inversion", "sequence", "question", "answer", "arch", "breathing", "cadence"] },
+  joyful: { label: "欢快", minNotes: 3, maxNotes: 6, rhythms: ["even", "dotted", "syncopated", "sixteenth"], maxStep: 4, velocity: .06, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "question", "answer", "arch", "leap", "ornament", "cadence"] },
+  mysterious: { label: "神秘", minNotes: 2, maxNotes: 4, rhythms: ["dotted", "syncopated"], maxStep: 4, velocity: -.04, detached: false, shapes: ["inversion", "retrograde", "rhythmic_shift", "question", "breathing", "ornament", "cadence"] },
+  intense: { label: "激昂", minNotes: 4, maxNotes: 6, rhythms: ["dotted", "syncopated", "sixteenth"], maxStep: 5, velocity: .09, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "answer", "arch", "leap", "ornament", "cadence"] },
 };
 
 function emotionProfile(name) { return EMOTION_PROFILES[name] ?? EMOTION_PROFILES.warm; }
@@ -143,15 +143,20 @@ function tickAt(beat) {
 
 function beatsAt(tick) { return tick / TICKS_PER_BEAT; }
 
-function slotsForCount(family, count) {
+function slotsForCount(family, count, earliestBeat = 0, variant = 0) {
   const slots = EIGHT_SLOT_PATTERNS[family] ?? EIGHT_SLOT_PATTERNS.even;
-  const wanted = clamp(Math.round(count), 2, 8);
-  return Array.from({ length: wanted }, (_, index) => beatsAt(slots[Math.round(index * (slots.length - 1) / (wanted - 1))]));
+  const earliestTick = clamp(Math.ceil(earliestBeat * TICKS_PER_BEAT), 0, BAR_TICKS - 1);
+  const available = [...new Set([...(earliestTick ? [earliestTick] : []), ...slots.filter((tick) => tick >= earliestTick)])].sort((a, b) => a - b);
+  const wanted = Math.min(available.length, clamp(Math.round(count), 1, 8));
+  if (wanted === 1) return [beatsAt(available[0])];
+  const finalIndex = Math.max(wanted - 1, available.length - 1 - (variant % 3));
+  return Array.from({ length: wanted }, (_, index) => beatsAt(available[Math.round(index * finalIndex / (wanted - 1))]));
 }
 
 function notesForCount(degrees, count) {
-  const wanted = clamp(Math.round(count), 2, 8);
+  const wanted = clamp(Math.round(count), 1, 8);
   const line = [...degrees];
+  if (wanted === 1) return [line[0]];
   while (line.length < wanted) {
     let insertAt = 0;
     for (let index = 1; index < line.length - 1; index += 1) {
@@ -190,7 +195,7 @@ function snapToChord(scale, degree, chordDegrees) {
   return best;
 }
 
-export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null, profile: profileName = "warm", chordRoot = null }) {
+export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null, profile: profileName = "warm", chordRoot = null, incomingCarryBeats = 0 }) {
   const scale = SCALES[key] ?? SCALES["C major"];
   const profile = emotionProfile(profileName);
   const motif = motifFromNotes(scale, notes, bar);
@@ -223,13 +228,22 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
   const recentSignatures = recentHistory.map((entry) => entry.signature);
   // Strong-beat positions for this bar's rhythm, used for chord snapping.
   const strongBeats = new Set([0, 2]);
-  return shapes.map(([id, intent, rawDegrees, offsets, velocity]) => {
+  return shapes.map(([id, intent, rawDegrees, offsets, velocity], shapeIndex) => {
     if (Number.isFinite(noteCount)) {
       const requested = clamp(noteCount, profile.minNotes, profile.maxNotes);
       const count = id === "breathing" ? Math.min(requested, 3) : id === "ornament" ? Math.max(requested, ["intense", "joyful"].includes(profileName) ? 5 : profile.minNotes) : requested;
       rawDegrees = notesForCount(rawDegrees, count);
-      offsets = slotsForCount(rhythm.family, count);
+      offsets = slotsForCount(rhythm.family, count, incomingCarryBeats, shapeIndex);
+      if (offsets.length !== rawDegrees.length) rawDegrees = notesForCount(rawDegrees, offsets.length);
     }
+    if (incomingCarryBeats > 0 && !Number.isFinite(noteCount)) {
+      offsets = slotsForCount(rhythm.family, rawDegrees.length, incomingCarryBeats, shapeIndex);
+      rawDegrees = notesForCount(rawDegrees, offsets.length);
+    }
+    // A few sustained tones cross the barline. Put their attack on beat 4
+    // (offset 3), then reserve beat 1 of the next bar for the held note.
+    const holdAcross = (bar % 4 <= 1) && (profileName === "calm" || profileName === "warm" || id === "breathing" || id === "arch");
+    if (holdAcross && offsets.length > 1 && offsets.at(-1) >= 2.75 && offsets.at(-2) < 3) offsets[offsets.length - 1] = 3;
     // All onset locations live on the sixteenth-note grid. The rhythm arrays
     // are expressive, but timing is never an arbitrary floating-point value.
     offsets = offsets.map(tickAt).sort((a, b) => a - b).map(beatsAt);
@@ -237,6 +251,7 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
     const alignedDegrees = smoothContour(rawDegrees.map((degree, index) => (strongBeats.has(offsets[index]) ? snapToChord(scale, degree, triad) : degree)), profile.maxStep);
     let previousMidi = notes.at(-1)?.midi ?? scale.tonic + 4;
     const degrees = alignedDegrees.map((degree, index) => {
+      const previousDegree = midiToDegree(scale, previousMidi);
       let connected = voiceLead(scale, degree, previousMidi);
       let midi = degreeToMidi(scale, connected);
       // More onset slots must create a line, not a repeated trigger of the
@@ -245,12 +260,16 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
       // tied, which this onset-based planner does not emit.
       if (index > 0 && midi === previousMidi) {
         const direction = Math.sign((alignedDegrees[index + 1] ?? degree) - (alignedDegrees[index - 1] ?? degree)) || (index % 2 ? 1 : -1);
-        connected = voiceLead(scale, withinRegister(scale, degree + direction), previousMidi);
+        connected = withinRegister(scale, previousDegree + direction);
         midi = degreeToMidi(scale, connected);
         if (midi === previousMidi) {
-          connected = voiceLead(scale, withinRegister(scale, degree - direction * 2), previousMidi);
+          connected = withinRegister(scale, previousDegree - direction);
           midi = degreeToMidi(scale, connected);
         }
+      }
+      if (index > 0 && Math.abs(connected - previousDegree) > profile.maxStep) {
+        connected = withinRegister(scale, previousDegree + Math.sign(connected - previousDegree) * profile.maxStep);
+        midi = degreeToMidi(scale, connected);
       }
       previousMidi = midi;
       return connected;
@@ -258,7 +277,8 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
     const events = degrees.map((degree, index) => {
       const midi = degreeToMidi(scale, degree);
       const onsetTick = tickAt(offsets[index]);
-      const nextTick = index === degrees.length - 1 ? BAR_TICKS : tickAt(offsets[index + 1]);
+      const carries = holdAcross && index === degrees.length - 1 && onsetTick === 12;
+      const nextTick = index === degrees.length - 1 ? BAR_TICKS + (carries ? TICKS_PER_BEAT : 0) : tickAt(offsets[index + 1]);
       const spanTicks = Math.max(1, nextTick - onsetTick);
       // A duration is an integer number of sixteenths: 1=16th, 2=8th,
       // 3=dotted 8th, 4=quarter, 6=dotted quarter, etc. Connected melodic
@@ -298,7 +318,7 @@ const ANSWERING_STYLE = {
   breathing: "ornament", ornament: "breathing", cadence: "motif_echo",
 };
 
-export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = null, harmonicRoots = null }) {
+export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = null, harmonicRoots = null, incomingCarryBeats = 0 }) {
   const profileName = plan?.profile ?? "warm";
   const profile = emotionProfile(profileName);
   const shapeIds = profile.shapes;
@@ -309,15 +329,17 @@ export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = nul
     const plannedFamily = plan?.rhythms?.[0];
     const family = choiceIndex % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + choiceIndex) % profile.rhythms.length]
       : profile.rhythms.includes(plannedFamily) ? plannedFamily : profile.rhythms[Math.floor(bar / 2) % profile.rhythms.length];
-    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0], profile: profileName, chordRoot: harmonicRoots?.[0] })[index];
+    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0], profile: profileName, chordRoot: harmonicRoots?.[0], incomingCarryBeats })[index];
     const simulatedNotes = [...notes, ...first.events.map((event) => ({ ...event, origin: "system", bar }))];
+    const lastFirst = first.events.at(-1);
+    const secondCarryBeats = Math.max(0, lastFirst.offset + lastFirst.duration - 4);
     const plannedAnswerFamily = plan?.rhythms?.[1];
     const answerFamily = choiceIndex % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + choiceIndex + 1) % profile.rhythms.length]
       : profile.rhythms.includes(plannedAnswerFamily) ? plannedAnswerFamily : profile.rhythms[(Math.floor(bar / 2) + 1) % profile.rhythms.length];
     const secondOptions = makeMelodyCandidates({
       key, notes: simulatedNotes, bar: bar + 1,
       history: [...history, first].slice(-PHRASE_HISTORY_BARS),
-      rhythmFamily: answerFamily, noteCount: plan?.counts?.[1], profile: profileName, chordRoot: harmonicRoots?.[1],
+      rhythmFamily: answerFamily, noteCount: plan?.counts?.[1], profile: profileName, chordRoot: harmonicRoots?.[1], incomingCarryBeats: secondCarryBeats,
     });
     const intendedAnswer = (bar + 1) % 4 === 3 ? "cadence" : ANSWERING_STYLE[first.id];
     const answerId = profile.shapes.includes(intendedAnswer) ? intendedAnswer : profile.shapes.includes("answer") ? "answer" : profile.shapes.includes("question") ? "question" : profile.shapes[0];
@@ -360,7 +382,8 @@ export function choosePlayableCandidate(result, candidates, history = [], bar = 
     const isRecent = history.slice(-2).some((entry) => entry.id === candidate.id);
     const repeatedStyle = history.slice(-PHRASE_HISTORY_BARS).filter((entry) => entry.id === candidate.id).length;
     const barsInPhrase = candidate.bars?.length ?? 1;
-    const expectedCount = (Number.isFinite(requestedDensity) ? 3 + requestedDensity * .7 : 4) * barsInPhrase;
+    const profile = emotionProfile(candidate.emotionProfile);
+    const expectedCount = ((profile.minNotes + profile.maxNotes) / 2 + (Number.isFinite(requestedDensity) ? (requestedDensity - 1.5) * .15 : 0)) * barsInPhrase;
     const densityFit = .05 - Math.abs(candidate.events.length - expectedCount) * .025;
     const motifFit = Number.isFinite(motifKeep) && ["motif_echo", "inversion", "retrograde", "rhythmic_shift"].includes(candidate.id) ? motifKeep * .07 : 0;
     const closesAt = bar + barsInPhrase - 1;

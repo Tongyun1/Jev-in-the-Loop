@@ -41,11 +41,11 @@ RHYTHMS = {
 }
 
 PERFORMANCE_PROFILES = {
-    "calm": "calm, spacious: 2–4 attacks, mostly held notes and gentle stepwise motion",
-    "warm": "warm, lyrical: 3–5 attacks, connected eighths and a soft long ending",
-    "joyful": "happy, playful: 5–8 attacks, lively eighths and syncopation with bright accents",
-    "mysterious": "mysterious, suspended: 3–5 attacks, deliberate offbeats and lingering tension",
-    "intense": "intense, driving: 5–8 attacks, dotted/syncopated/sixteenth movement and stronger accents",
+    "calm": "calm, spacious: 1–3 attacks, held notes and gentle stepwise motion",
+    "warm": "warm, lyrical: 2–4 attacks, connected notes and a soft long ending",
+    "joyful": "happy, playful: 3–6 attacks, lively accents with breathing space",
+    "mysterious": "mysterious, suspended: 2–4 attacks and lingering tension",
+    "intense": "intense, driving: 4–6 attacks, dotted or short ornaments with accents",
 }
 
 
@@ -66,7 +66,7 @@ def fallback_plan(state: dict) -> dict:
     energy = float(state.get("relative_energy", .45))
     profile = profile_from_image(image, energy)
     quiet, active = profile == "calm", profile in ("intense", "joyful")
-    counts = [2, 3] if quiet else [6, 7] if active else [3, 4]
+    counts = [2, 2] if quiet else [4, 5] if active else [2, 3]
     rhythms = ["even", "dotted"] if quiet else ["even", "syncopated"] if profile == "joyful" else ["syncopated", "sixteenth"] if active else ["dotted", "even"]
     development = {"calm": "breathing", "joyful": "sequence", "mysterious": "question", "intense": "leap"}.get(profile, "answer")
     return {"source": "本地节奏规划", "profile": profile, "development": development, "counts": counts, "rhythms": rhythms, "question_count": 6}
@@ -76,15 +76,15 @@ def ask_plan(state: dict) -> dict:
     api_key = os.environ.get("TYPESAFE_API_KEY")
     if not api_key or not state.get("session_id"):
         return fallback_plan(state)
-    count_criteria = {str(number): f"{number} separate note attacks in one four-beat bar" for number in range(2, 9)}
+    count_criteria = {str(number): f"{number} separate note attacks in one four-beat bar" for number in range(1, 7)}
     body = {
         "model": os.environ.get("TYPESAFE_MODEL", "jev-latest"),
         "state": {"music": state},
         "questions": {
             "performance": {"type": "choice", "instructions": "Choose one performance profile for the next two bars from current_image. This choice governs the legal note count, rhythm families, melodic interval size, note length and velocity. Calm imagery must use calm; do not choose a visually matching profile that contradicts the music.", "criteria": PERFORMANCE_PROFILES},
             "development": {"type": "choice", "instructions": "Choose one way to DEVELOP the user's motif in the NEXT two bars. Follow the active current_image, recent motif and phrase arc. Calm scenes prefer breathing, echo or answer; joyful scenes prefer sequence, arch or ornament. Choose a recognisable musical action, not a visual mood.", "criteria": {"motif_echo": "recognisable motif echo", "sequence": "rising or shifted sequence", "question": "an open question", "answer": "a gentle answer", "arch": "a rising and falling arch", "breathing": "held tones and silence", "ornament": "short decorative notes", "leap": "energetic leaps and recovery"}},
-            "count_first": {"type": "choice", "instructions": "Choose the number of note attacks for the FIRST of two four-beat bars. Use current_image, relative_energy, recent note density, and the user's motif. Calm scenes need space; rising or intense scenes can be busier. Between 2 and 8, choose one number. This is onset count, not note duration.", "criteria": count_criteria},
-            "count_second": {"type": "choice", "instructions": "Choose the number of note attacks for the SECOND bar. Make a small, intentional development of the first bar's energy and the current image. Between 2 and 8. This is onset count, not note duration.", "criteria": count_criteria},
+            "count_first": {"type": "choice", "instructions": "Choose the number of note attacks for the FIRST four-beat bar. Use current_image and recent density. Leave space even in energetic scenes: 1–6 attacks, usually 2–5. This counts new attacks, not held duration.", "criteria": count_criteria},
+            "count_second": {"type": "choice", "instructions": "Choose 1–6 new attacks for the SECOND bar. Develop the first bar, allowing a long tone to cross the barline and reduce new attacks here.", "criteria": count_criteria},
             "rhythm_first": {"type": "choice", "instructions": "Choose the timing character for the FIRST bar from the current image and recent motif. Each family permits rests and held notes.", "criteria": RHYTHMS},
             "rhythm_second": {"type": "choice", "instructions": "Choose the timing character for the SECOND bar so it answers or develops the first, following the same current image.", "criteria": RHYTHMS},
         },
@@ -97,7 +97,7 @@ def ask_plan(state: dict) -> dict:
     development = answers["development"]["choice"]
     counts = [int(answers[name]["choice"]) for name in ("count_first", "count_second")]
     rhythms = [answers[name]["choice"] for name in ("rhythm_first", "rhythm_second")]
-    if profile not in PERFORMANCE_PROFILES or development not in body["questions"]["development"]["criteria"] or any(count < 2 or count > 8 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
+    if profile not in PERFORMANCE_PROFILES or development not in body["questions"]["development"]["criteria"] or any(count < 1 or count > 6 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
         raise ValueError("Jev returned a rhythm plan outside the supplied choices")
     return {"source": "Jev", "profile": profile, "development": development, "counts": counts, "rhythms": rhythms, "question_count": 6, "context_chars": len(encoded)}
 
@@ -134,7 +134,7 @@ def fallback(state: dict, candidates: list[dict]) -> dict:
         for item in candidates
     }
     return {
-        "source": "local fallback (set TYPESAFE_API_KEY to use Jev)",
+        "source": "本地音乐规则（未连接 Jev）",
         "choice": chosen["id"],
         "confidence": probability,
         "probabilities": probabilities,
@@ -185,7 +185,7 @@ def ask_jev(state: dict, candidates: list[dict]) -> dict:
         "questions": {
             "phrase": {
                 "type": "choice",
-                "instructions": "Choose ONE complete two-bar phrase from the supplied playable candidates. A plan event is [scale degree, sixteenth-note onset across both bars (0..31), sixteenth-note duration, velocity percent]. The notes and rhythm are already fixed by code; judge the whole musical sentence rather than inventing notes. Use the user's active current_image and recent motif. Prefer a connected question and answer, contrast between short and sustained notes, expressive rests, and a credible two-bar arc. Avoid mechanically repeated contours, uniformly busy rhythm, and a cadence too early in the sentence. Both bars must fit the named key and the intended harmonic roles.",
+                "instructions": "Choose ONE complete two-bar phrase from the supplied playable candidates. A plan event is [scale degree, sixteenth-note onset across both bars (0..31), sixteenth-note duration, velocity percent]. The notes and rhythm are already fixed by code; judge the whole musical sentence rather than inventing notes. A held note may cross a barline; prefer it when the next bar needs breathing space. Use the user's active current_image and recent motif. Prefer a connected question and answer, contrast between short and sustained notes, expressive rests, and a credible two-bar arc. Avoid mechanically repeated contours, uniformly busy rhythm, and a cadence too early in the sentence. Both bars must fit the named key and the intended harmonic roles.",
                 "criteria": criteria,
             },
             "density": {
@@ -316,6 +316,11 @@ def ask_jev(state: dict, candidates: list[dict]) -> dict:
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT / "static", **kwargs)
+
+    def end_headers(self):
+        # Development pages should never keep an older interface in a tab.
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
 
     def do_POST(self):
         if self.path not in ("/decision", "/plan"):

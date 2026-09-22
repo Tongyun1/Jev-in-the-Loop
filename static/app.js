@@ -25,6 +25,7 @@ let followingPhrase = null, followingHarmony = null;
 let preparedPhrase = null, preparedHarmony = null, preparedFollowingHarmony = null, preparedForBar = null;
 let preparedVisual = null;
 let notes = [], phraseHistory = [], harmonyHistory = [], energy = .42;
+let userMotifNotes = [];
 let pendingKeyShift = null, pendingShiftAt = Infinity, shiftSource = null; // Applied at the next four-bar boundary.
 let sadMajorBars = 0, brightMinorBars = 0; // Mood-gate patience counters.
 const scenePlanCache = new Map();
@@ -118,6 +119,10 @@ function updateStats() {
   $("energy").textContent = energy.toFixed(2);
   $("density").textContent = `${(recent.length / beats).toFixed(2)} / beat`;
   $("notes").textContent = notes.slice(-8).map((note) => noteName(note.midi)).join(" · ") || "—";
+  $("motif-notes").textContent = userMotifNotes.slice(-8).map((midi) => noteName(midi)).join("  ·  ") || "等待输入";
+  $("input-status").textContent = userMotifNotes.length
+    ? `已输入 ${userMotifNotes.length} 个音。${started ? "续写时也可以继续弹奏。" : "准备好后点击“开始续写”。"}`
+    : "弹出几个音后，开始续写。";
   orb?.setDensity(density01());
 }
 
@@ -174,6 +179,11 @@ function compactHarmonyCandidates(candidates) {
 
 function contextSize(value) {
   return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+
+function carryIntoNextBar(events) {
+  const last = events?.at(-1);
+  return last ? Math.max(0, last.offset + last.duration - 4) : 0;
 }
 
 function localFallback(candidates) {
@@ -267,10 +277,15 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   const harmonyFrame = planHarmonyFrame({ key: plannedKey, bar: decisionBar, history: harmonyHistory, profile: plan.profile });
   const harmonyCandidates = harmonyFrame.first;
   const nextHarmonyCandidates = harmonyFrame.second;
-  const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: decisionBar, history: phraseHistory, plan, harmonicRoots: harmonyFrame.roots });
+  const precedingEvents = decisionBar > barNumber ? followingPhrase?.events : notes.filter((note) => note.bar === decisionBar - 1);
+  const incomingCarryBeats = carryIntoNextBar(precedingEvents);
+  const planningNotes = decisionBar > barNumber && followingPhrase
+    ? [...notes, ...followingPhrase.events.map((event) => ({ ...event, bar: decisionBar - 1, origin: "system" }))]
+    : notes;
+  const candidates = makeTwoBarCandidates({ key: plannedKey, notes: planningNotes, bar: decisionBar, history: phraseHistory, plan, harmonicRoots: harmonyFrame.roots, incomingCarryBeats });
   let result;
   const decisionPayload = {
-    state: { ...baseState, rhythmic_plan: plan, harmonic_roots: harmonyFrame.roots, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) },
+    state: { ...baseState, incoming_hold_beats: incomingCarryBeats, lead_in_note: precedingEvents?.at(-1)?.midi ?? null, rhythmic_plan: plan, harmonic_roots: harmonyFrame.roots, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) },
     candidates: compactCandidates(candidates),
   };
   const localContextChars = contextSize(decisionPayload);
@@ -350,7 +365,8 @@ function playBar(time) {
   // legal local bar is less disruptive and gives the next prefetch a chance.
   const emergencyProfile = classifyScene(narrativeStage(barNumber)) ?? "warm";
   const emergencyHarmony = planHarmonyFrame({ key: currentKey(), bar: barNumber, history: harmonyHistory, profile: emergencyProfile });
-  const emergencyCandidates = makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory, profile: emergencyProfile, chordRoot: emergencyHarmony.roots[0], noteCount: Math.round((EMOTION_PROFILES[emergencyProfile].minNotes + EMOTION_PROFILES[emergencyProfile].maxNotes) / 2) });
+  const emergencyCarryBeats = carryIntoNextBar(notes.filter((note) => note.bar === barNumber - 1));
+  const emergencyCandidates = makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory, profile: emergencyProfile, chordRoot: emergencyHarmony.roots[0], noteCount: Math.round((EMOTION_PROFILES[emergencyProfile].minNotes + EMOTION_PROFILES[emergencyProfile].maxNotes) / 2), incomingCarryBeats: emergencyCarryBeats });
   const emergencyPhrase = emergencyCandidates[(barNumber * 5 + phraseHistory.length) % emergencyCandidates.length];
   const phrase = packagePhrase?.bars?.[0] ?? followingPhrase ?? emergencyPhrase;
   const harmony = queuedHarmony ?? followingHarmony ?? chooseHarmony({ harmony: "", voicing: "auto" }, emergencyHarmony.first);
@@ -408,7 +424,9 @@ function stopPlayback(message = "续写已停止。") {
   chordSynth?.releaseAll();
   $("start").textContent = "开始续写";
   $("start").disabled = false;
+  $("stop").disabled = true;
   $("now-playing").textContent = message;
+  updateStats();
 }
 
 async function start() {
@@ -433,6 +451,8 @@ async function start() {
   Tone.getTransport().bpm.value = currentBpm();
   started = true;
   $("start").textContent = "续写进行中"; $("start").disabled = true;
+  $("stop").disabled = false;
+  updateStats();
   await requestDecision();
   transportEventId = Tone.getTransport().scheduleRepeat(playBar, "1m", 0);
   Tone.getTransport().start("+0.08");
@@ -445,6 +465,8 @@ function addUserNote(index) {
   const velocity = .56 + Math.random() * .18;
   const offset = started ? (Tone.getTransport().ticks / Tone.getTransport().PPQ) % 4 : (notes.filter((note) => note.origin === "user").length % 8) * .5;
   notes.push({ midi, bar: barNumber, offset, duration: .5, velocity, origin: "user" });
+  userMotifNotes.push(midi);
+  userMotifNotes = userMotifNotes.slice(-16);
   notes = notes.slice(-(MEMORY_BARS * 12));
   energy = clamp(energy * .7 + velocity * .3, .1, .99);
   orb?.pulse(.75);
@@ -476,9 +498,10 @@ function buildPiano() {
 try { orb = createOrb($("orb"), audioMetrics); }
 catch { $("orb").classList.add("orb-fallback"); }
 applyVisualState({ visual_mood: "warm", visual_scene: "aurora", visual_temperature: 2, visual_motion: 1, visual_luminance: 2 });
-$("start").addEventListener("click", () => start().catch((error) => { $("now-playing").textContent = `启动失败：${error.message}`; started = false; $("start").disabled = false; }));
+$("start").addEventListener("click", () => start().catch((error) => { $("now-playing").textContent = `启动失败：${error.message}`; started = false; $("start").disabled = false; $("stop").disabled = true; }));
+$("stop").addEventListener("click", () => stopPlayback());
 $("bpm").addEventListener("change", () => { if (started) Tone.getTransport().bpm.value = currentBpm(); });
-$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; currentHarmony = null; followingPhrase = null; followingHarmony = null; preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; preparedVisual = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
+$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; userMotifNotes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; followingPhrase = null; followingHarmony = null; preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; preparedVisual = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
 $("tone").addEventListener("change", () => { if (started) createChordSynth(); });
 $("melody-volume").addEventListener("input", updateVolumes);
 $("chord-volume").addEventListener("input", updateVolumes);

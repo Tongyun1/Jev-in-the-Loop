@@ -46,6 +46,8 @@ TYPESAFE_API_KEY=你的官方key python3 server.py
 
 创作描述可以写成 `平静→开心`。前四小节的当前意境为“平静”，后四小节为“开心”；完整描述只表示长线走向，不再让开头词锁定后半段的情绪。术语见 `CONTEXT.md`。
 
+输入区只保留调内虚拟钢琴与电脑键盘，页面不请求麦克风权限。键盘与下一乐句在桌面并列、窄屏纵向排列；输入的动机会即时显示。播放器有“停止”按钮，停止后不再安排新的乐句请求。起音密度已下调，例如平静通常每小节 1–3 个新音、欢快 3–6 个。较舒展的候选会从第 4 拍起延续到下一小节，第 2 小节到第 3 小节也能延续；下一小节的新音会等长音结束。
+
 旋律、和声与意境规划回归检查：`node --experimental-default-type=module tests/melody.test.mjs`、`node --experimental-default-type=module tests/harmony.test.mjs` 和 `node --experimental-default-type=module tests/direction.test.mjs`。
 
 离线采样工具：`node --experimental-default-type=module tools/sample.mjs "雨夜，克制，慢慢变亮" 40`。这是旧版单小节采样链，与当前两阶段实时播放链不同；仅供比较历史重复率，用于统计重复率、候选利用率与强拍和弦对齐率；采样结论记录在 `MELODY_SAMPLING_REPORT.md`。
