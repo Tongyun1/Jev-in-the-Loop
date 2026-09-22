@@ -1,37 +1,45 @@
-# Jev · Living Melody
+# Jev-in-the-Loop: Living Melody
 
-**让一句旋律，长成一片氛围。**
+**Turn a short melody into a changing atmosphere.** [简体中文](README_ZH.md)
 
-弹几个音，写下「雨夜、克制、慢慢变亮」这样的描述，网页会接着演奏。你可以在播放中继续弹琴或修改描述；旋律、和弦与球体的颜色和形状会随下一段音乐变化。
+Play a few notes and describe a scene, such as “rainy night, restrained, slowly brightening.” The browser continues the melody. While it plays, you can add notes or change the description; the next phrase, its harmony, and the animated orb respond.
 
-![实时旋律续写演示：球体随音乐改变形状和颜色](docs/demo.gif)
+![Living Melody demo showing the rendered orb and changing phrases](docs/demo.gif)
 
-## 你可以怎么玩
+## Try it
 
-- **给旋律一个起点**：点击调内八键，或按 `A S D F G H J K` 输入短动机。
-- **用文字改变方向**：描述氛围，也可以写「平静 → 开心」让音乐逐段转变。
-- **看见每次选择**：页面展示下一段的音符、乐句候选、和声及决策来源；三维球体随音乐运动。
+- Play a short motif on the eight in-key piano keys, or press `A S D F G H J K`.
+- Describe a mood. You can use `calm → joyful` to let the scene change over time.
+- Watch the next phrase, candidate probabilities, harmony, and decision source appear alongside the music.
 
-当前版本是**两小节一段的实时续写原型**。它先依据描述确定演奏范围并生成可播放的候选乐句，再由 [Jev](https://docs.typesafe.ai/primitives) 从候选中选择。Jev 连接不可用时，会明确标注并使用本地音乐规则继续播放。
+Living Melody is a **standalone browser playground**, not a Codex plugin. A local music engine builds playable two-bar candidates from your motif and the scene; [Jev](https://docs.typesafe.ai/primitives) selects among them. If no API key is set or the request fails, the UI identifies its local-rule fallback and keeps playing.
 
-## 本地运行
+## Run locally
 
-需要 Python 3。浏览器首次加载 [Tone.js](https://github.com/Tonejs/Tone.js) 和 [Three.js](https://github.com/mrdoob/three.js) 时需要联网；球体需要 WebGL。
+Requires Python 3. The browser loads [Tone.js](https://github.com/Tonejs/Tone.js) and [Three.js](https://github.com/mrdoob/three.js) from a CDN, so the first load needs internet access. The orb requires WebGL.
 
 ```bash
-git clone https://github.com/LuXZ1z/Jev-Living-Melody.git
-cd Jev-Living-Melody
+git clone https://github.com/Tongyun1/Jev-in-the-Loop.git
+cd Jev-in-the-Loop/playgrounds/living-melody
 python3 server.py
 ```
 
-打开 <http://127.0.0.1:8787>，弹出几个音，点击「开始续写」。没有可用密钥时，页面会使用本地规则演示；接入 Jev 可这样启动：
+Open <http://127.0.0.1:8787>, play a few notes, and click the start button. To use Jev, set your own TypeSafe key when starting the local server:
 
 ```bash
-TYPESAFE_API_KEY=你的密钥 python3 server.py
+TYPESAFE_API_KEY=your_key python3 server.py
 ```
 
-密钥仅由本地 Python 服务读取，不会发送给浏览器。按 `Ctrl+C` 停止服务。
+The key is read by the local Python process and is never sent to the browser. Press `Ctrl+C` to stop the server.
 
-## 想了解实现？
+## Explore the implementation
 
-前端使用 Tone.js 播放、Three.js 绘制球体；`static/melody.js` 生成调内乐句候选，`static/harmony.js` 安排和声，`server.py` 调用 Jev 并处理本地回退。技术细节见[决策设计](JEV_DECISION_DESIGN.md)、[节奏设计](RHYTHM_DIRECTOR.md)和[旋律采样报告](MELODY_SAMPLING_REPORT.md)。
+`static/melody.js` creates in-key phrase candidates, `static/harmony.js` prepares harmony, `static/app.js` schedules playback, `static/orb.js` renders the visual, and `server.py` calls Jev with a local fallback. See [decision design](JEV_DECISION_DESIGN.md), [rhythm design](RHYTHM_DIRECTOR.md), and [sampling notes](MELODY_SAMPLING_REPORT.md).
+
+Offline checks:
+
+```bash
+node --experimental-default-type=module tests/melody.test.mjs
+node --experimental-default-type=module tests/harmony.test.mjs
+node --experimental-default-type=module tests/direction.test.mjs
+```

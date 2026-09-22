@@ -17,10 +17,21 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - run: uv sync --locked --all-groups
       - run: uv run ruff check .
       - run: uv run pytest -q
       - run: uv build
+      - run: python3 -m py_compile server.py
+        working-directory: playgrounds/living-melody
+      - run: node --experimental-default-type=module tests/melody.test.mjs
+        working-directory: playgrounds/living-melody
+      - run: node --experimental-default-type=module tests/harmony.test.mjs
+        working-directory: playgrounds/living-melody
+      - run: node --experimental-default-type=module tests/direction.test.mjs
+        working-directory: playgrounds/living-melody
       - run: uv run python scripts/package_release.py
       - run: python scripts/package_source.py --output "$RUNNER_TEMP/jev-in-the-loop-source.zip"
         working-directory: .

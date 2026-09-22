@@ -18,13 +18,23 @@ PROJECT_FILES = (
     "scripts/render_readme_demo.py", "docs/media/demo-hotel.gif", "docs/media/demo-course.gif",
     "docs/media/README.md",
 )
+PLAYGROUND_FILES = (
+    ".gitignore", "README.md", "README_ZH.md", "CONTEXT.md", "JEV_DECISION_DESIGN.md",
+    "RHYTHM_DIRECTOR.md", "MELODY_SAMPLING_REPORT.md", "server.py", "docs/cover.jpg",
+    "docs/demo.gif", "static/index.html", "static/style.css", "static/app.js",
+    "static/direction.js", "static/harmony.js", "static/melody.js", "static/orb.js",
+    "static/tonality.js", "tests/melody.test.mjs", "tests/harmony.test.mjs",
+    "tests/direction.test.mjs", "tools/sample.mjs",
+)
 
 
 def source_files():
     spec = importlib.util.spec_from_file_location("browser_release", PLUGIN / "scripts/package_release.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    files = [ROOT / name for name in PROJECT_FILES] + module.release_files(PLUGIN)
+    files = ([ROOT / name for name in PROJECT_FILES]
+             + [ROOT / "playgrounds/living-melody" / name for name in PLAYGROUND_FILES]
+             + module.release_files(PLUGIN))
     for path in files:
         if not path.is_file() or not path.resolve().is_relative_to(ROOT):
             raise ValueError(f"Missing or unsafe source: {path.relative_to(ROOT)}")
