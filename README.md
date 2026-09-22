@@ -97,7 +97,7 @@ Jev 每两小节听懂当前意境，在旋律、和声与色彩的岔路口替�
 ## 🚀 快速开始
 
 ```bash
-git clone <repo-url> && cd living-melody
+git clone https://github.com/LuXZ1z/Jev-Living-Melody.git && cd Jev-Living-Melody
 python3 server.py
 # 打开 http://127.0.0.1:8787，点「开始续写」
 ```
