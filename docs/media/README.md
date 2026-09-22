@@ -16,7 +16,7 @@ there is no independent animation or JavaScript to synchronize on GitHub.
 
 | Preview | Uploaded MP4 | Playback | Clock |
 | --- | --- | --- | --- |
-| `demo-hotel.gif` | [Beijing Ctrip recording](demo-hotel-beijing.mp4) | 3×, already applied in the supplied video | Clip position × 3; ends at about 43.7 s |
+| `demo-hotel.gif` | [Beijing Ctrip recording](https://github.com/user-attachments/assets/50a78ed3-9fbb-4434-a969-86b6bebd6e88) | 3×, already applied in the supplied video | Clip position × 3; ends at about 43.7 s |
 | `demo-course.gif` | [Bilibili recording](https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864) | 1× | Clip position; ends at 19.0 s |
 
 The counters represent elapsed time in the supplied recordings, including their

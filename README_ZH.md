@@ -35,7 +35,7 @@
 
 <img src="docs/media/demo-hotel.gif" alt="携程搜索北京酒店并打开预订页，3 倍速播放，计时器显示录屏经过时间" width="100%" />
 
-[观看北京酒店演示（MP4）](docs/media/demo-hotel-beijing.mp4) · **3 倍速播放** · 计时器显示录屏经过时间。
+[观看北京酒店演示（MP4）](https://github.com/user-attachments/assets/50a78ed3-9fbb-4434-a969-86b6bebd6e88) · **3 倍速播放** · 计时器显示录屏经过时间。
 
 #### 从想学什么，到打开课程
 

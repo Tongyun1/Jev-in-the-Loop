@@ -35,7 +35,7 @@ Change the destination, search hotels, explore the details, and select a room. A
 
 <img src="docs/media/demo-hotel.gif" alt="Ctrip Beijing hotel search and booking-page demo, at 3× playback, with a source-time counter" width="100%" />
 
-[Watch the Beijing hotel demo (MP4)](docs/media/demo-hotel-beijing.mp4) · **3× playback** · Timer shows recording elapsed time.
+[Watch the Beijing hotel demo (MP4)](https://github.com/user-attachments/assets/50a78ed3-9fbb-4434-a969-86b6bebd6e88) · **3× playback** · Timer shows recording elapsed time.
 
 #### From curiosity to a course
 
