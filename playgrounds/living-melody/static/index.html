@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jev · 氛围旋律续写</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">JEV × LIVING MELODY</p>
+          <h1>让一句旋律，<br>长成一片氛围。</h1>
+          <p class="lede">弹出一个动机，再描述它的世界。当前意境先决定演奏情绪、节奏和和声范围，Jev 再选择下一句的发展。</p>
+          <p class="hero-caption"><span class="live-dot"></span><span id="arc">等待你的动机</span></p>
+        </div>
+        <div class="orb-stage" aria-label="随旋律与情绪变化的三维球体"><div id="orb"></div><div class="orb-hint">SOUND BECOMES FORM</div></div>
+      </header>
+
+      <section class="controls card">
+        <label>创作描述 <input id="mood" value="雨夜、克制、慢慢变亮" /></label>
+        <label>BPM <input id="bpm" type="number" min="60" max="180" value="120" /></label>
+        <label>调式 <select id="key"></select></label>
+        <label>铺底音色 <select id="tone"><option value="pad">铺底 Pad</option><option value="warm">暖色合成</option><option value="bell">铃音 Bell</option><option value="organ">风琴 Organ</option></select></label>
+        <label class="volume-control">主旋律 <span id="melody-volume-label">0 dB</span><input id="melody-volume" type="range" min="-18" max="6" value="0" step="1" /></label>
+        <label class="volume-control">和弦铺底 <span id="chord-volume-label">-2 dB</span><input id="chord-volume" type="range" min="-18" max="3" value="-2" step="1" /></label>
+        <div class="transport-actions"><button id="start">开始续写</button><button id="stop" class="secondary" disabled>停止</button></div>
+      </section>
+
+      <section class="workspace" aria-label="输入、续写与实时状态">
+        <div class="card piano-wrap">
+          <div class="section-title"><span><span class="stage-number">01</span> 输入动机</span><small>当前调式内的八个音</small></div>
+          <p class="panel-intro">点击琴键，或按 A S D F G H J K。短短几音就能作为旋律的起点。</p>
+          <div class="motif-preview" aria-live="polite"><span class="motif-label">你的动机</span><strong id="motif-notes">等待输入</strong></div>
+          <div id="piano" aria-label="虚拟钢琴"></div>
+          <p id="input-status">弹出几个音后，开始续写。</p>
+        </div>
+        <div class="card decision">
+          <div class="section-title"><span><span class="stage-number">02</span> 下一乐句的选择</span><small id="source">等待开始</small></div>
+          <div class="decision-tags"><span id="decision-key">C 大调</span><span id="decision-profile">等待意境</span><span id="decision-emotion">等待情绪</span><span id="decision-rhythm">等待节奏</span></div>
+          <div class="decision-headline"><span>旋律走向</span><h2 id="choice">—</h2></div>
+          <p id="decision-why" class="decision-why">Jev 的旋律选择会显示在这里。</p>
+          <div class="phrase-preview"><p id="planned-notes" class="planned-notes">下一乐句的音符会显示在这里</p>
+            <div class="note-roll-wrap"><div class="roll-ruler"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div><div id="note-roll" class="note-roll" aria-label="下一乐句八拍音符时间线"></div></div>
+          </div>
+          <div class="prob-heading">乐句候选概率</div>
+          <div id="probabilities" class="probabilities"></div>
+        </div>
+        <div class="card timeline">
+          <div class="section-title"><span class="live-title"><span class="live-dot"></span>实时 · Jev 正在做什么</span><small id="bar">第 0 小节</small></div>
+          <div class="metrics">
+            <div><span>此刻音符</span><strong id="live-note">—</strong></div>
+            <div><span>下一音符</span><strong id="live-next">—</strong></div>
+            <div><span>乐句选择</span><strong id="live-choice">等待开始</strong></div>
+            <div><span>乐句置信度</span><strong id="live-confidence">—</strong></div>
+            <div><span>和声铺底</span><strong id="harmony">—</strong></div>
+            <div><span>视觉情绪</span><strong id="visual-mood">—</strong></div>
+          </div>
+          <p id="now-playing">系统还没有开始播放。</p>
+          <p id="confidence-note" class="confidence-note">音符来自被选中的乐句；置信度对应整句。</p>
+        </div>
+      </section>
+
+      <footer>球体使用 Three.js 与 WebGL 着色器；音高由虚拟钢琴输入。</footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
