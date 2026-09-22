@@ -10,7 +10,7 @@
 
 **Which decisions can Jev take on to make the whole task faster?** Each module explores a different answer. Browser is the first; more modules will grow from the tasks and decision loops we explore next.
 
-[Browser module](#jev-in-the-loop-browser) · [Project direction](#project-direction) · [Contribute](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[Browser module](#jev-in-the-loop-browser) · [Living Melody playground](#jev-in-the-loop-living-melody) · [Project direction](#project-direction) · [Contribute](CONTRIBUTING.md)
 
 ## Jev-in-the-Loop: Browser
 
@@ -94,6 +94,14 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 ```
 
 Follow the [installation guide](plugins/jev-browser-plugin/README.md#install-in-codex) to configure your key, connect Chrome, and install the plugin. Then open a new Codex task and say: **“Use Jev to…”**
+
+## Jev-in-the-Loop: Living Melody
+
+**A browser playground for music that changes as you play.** Give it a short melody and a scene description. A local music engine prepares two-bar phrases; Jev chooses the next phrase, harmony, and visual direction. The interface shows each decision while an animated orb responds to the music. A clearly marked local fallback lets you try it without a key.
+
+<p align="center"><a href="playgrounds/living-melody/README.md"><img src="playgrounds/living-melody/docs/cover.jpg" alt="Living Melody playground with a rendered music-reactive orb" width="75%" /></a></p>
+
+[Watch the demo and run the playground](playgrounds/living-melody/README.md) · [简体中文](playgrounds/living-melody/README_ZH.md)
 
 <a id="project-direction"></a>
 

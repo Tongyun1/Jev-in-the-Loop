@@ -35,3 +35,10 @@ Source: https://github.com/browser-use/browser-harness
 
 Browser Harness is consumed as a pinned package dependency. Its own distribution contains its
 license and notices.
+
+# Living Melody browser libraries
+
+Living Melody loads [Tone.js](https://github.com/Tonejs/Tone.js) and
+[Three.js](https://github.com/mrdoob/three.js) as pinned browser modules through esm.sh.
+They are external runtime libraries, not copied into this repository. See their upstream
+repositories for license texts and notices.

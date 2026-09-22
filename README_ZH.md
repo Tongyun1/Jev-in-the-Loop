@@ -10,7 +10,7 @@
 
 **哪些决策可以交给 Jev，让整个任务更快完成？** 每个模块探索一种答案。Browser 是第一个，更多模块将从接下来探索的任务与决策循环中生长出来。
 
-[Browser 模块](#jev-in-the-loop-browser) · [项目方向](#project-direction) · [参与开发](https://github.com/Tongyun1/Jev-in-the-Loop/blob/main/CONTRIBUTING.md)
+[Browser 模块](#jev-in-the-loop-browser) · [Living Melody Playground](#jev-in-the-loop-living-melody) · [项目方向](#project-direction) · [参与开发](CONTRIBUTING.md)
 
 ## Jev-in-the-Loop: Browser
 
@@ -94,6 +94,14 @@ cd Jev-in-the-Loop/plugins/jev-browser-plugin
 ```
 
 按照 [安装指南](plugins/jev-browser-plugin/README_ZH.md#安装到-codex) 完成密钥配置、Chrome 连接和插件安装，然后在 Codex 新任务中说：**“用 Jev……”**
+
+## Jev-in-the-Loop: Living Melody
+
+**一个会随着演奏改变的音乐 Playground。** 弹出短动机，再描述一种氛围：本地音乐引擎生成两小节候选，Jev 选择下一句旋律、和声与视觉方向。页面会展示每次选择，球体也会随音乐变化。没有密钥时，可以通过明确标注的本地规则体验。
+
+<p align="center"><a href="playgrounds/living-melody/README_ZH.md"><img src="playgrounds/living-melody/docs/cover.jpg" alt="Living Melody Playground 与随音乐变化的球体" width="75%" /></a></p>
+
+[观看演示并运行 Playground](playgrounds/living-melody/README_ZH.md) · [English](playgrounds/living-melody/README.md)
 
 <a id="project-direction"></a>
 
