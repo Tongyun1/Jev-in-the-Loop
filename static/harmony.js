@@ -7,6 +7,10 @@ const MINOR_PLAN = [[0, 5, 3], [3, 5, 1], [1, 3, 4], [4, 0, 5]];
 const ROMAN_MAJOR = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
 const ROMAN_MINOR = ["i", "ii°", "III", "iv", "v", "VI", "VII"];
 const VOICING_NAMES = { close: "原位", inv1: "第一转位", inv2: "第二转位", open: "开放排列" };
+const PROFILE_ROOTS = {
+  calm: [0, 3, 5, 1], warm: [0, 3, 5, 1, 4], joyful: [0, 3, 4, 5, 1],
+  mysterious: [1, 2, 4, 6, 5], intense: [4, 5, 3, 1, 0],
+};
 
 function chordCharacter(mode, root) {
   const quality = (mode === "major" ? ["major", "minor", "minor", "major", "major", "minor", "diminished"] : ["minor", "diminished", "major", "minor", "minor", "major", "major"])[root % 7];
@@ -36,12 +40,11 @@ function continuationRoots(previousRoot, mode, bar) {
   ][((previousRoot % 7) + 7) % 7];
 }
 
-export function buildHarmonyCandidates({ key, bar, history = [] }) {
+export function buildHarmonyCandidates({ key, bar, history = [], profile = "warm" }) {
   const scale = SCALES[key] ?? SCALES["C major"];
   const plannedRoots = continuationRoots(history.at(-1)?.root, scale.mode, bar);
-  // Include every diatonic root. The previous I/IV/V/vi palette made a
-  // familiar 6–4–5–1 loop the overwhelmingly likely outcome.
-  const roots = [...plannedRoots, ...Array.from({ length: 7 }, (_, root) => root).filter((root) => !plannedRoots.includes(root))];
+  const allowedRoots = PROFILE_ROOTS[profile] ?? PROFILE_ROOTS.warm;
+  const roots = [...plannedRoots.filter((root) => allowedRoots.includes(root)), ...allowedRoots.filter((root) => !plannedRoots.includes(root))];
   const roman = scale.mode === "minor" ? ROMAN_MINOR : ROMAN_MAJOR;
   const candidates = [];
   for (const root of roots) {
@@ -59,6 +62,19 @@ export function buildHarmonyCandidates({ key, bar, history = [] }) {
     }
   }
   return candidates;
+}
+
+export function planHarmonyFrame({ key, bar, history = [], profile = "warm" }) {
+  const recentRoots = new Set(history.slice(-2).map((entry) => entry.root));
+  const firstPalette = buildHarmonyCandidates({ key, bar, history, profile });
+  const firstRoot = (firstPalette.find((chord) => !recentRoots.has(chord.root)) ?? firstPalette[0]).root;
+  const first = firstPalette.filter((chord) => chord.root === firstRoot);
+  const nextHistory = [...history, { root: firstRoot, id: `${firstRoot}_triad` }];
+  const secondPalette = buildHarmonyCandidates({ key, bar: bar + 1, history: nextHistory, profile });
+  const secondRoot = (secondPalette.find((chord) => chord.root !== firstRoot && !recentRoots.has(chord.root))
+    ?? secondPalette.find((chord) => chord.root !== firstRoot) ?? secondPalette[0]).root;
+  const second = secondPalette.filter((chord) => chord.root === secondRoot);
+  return { roots: [firstRoot, secondRoot], first, second };
 }
 
 function rawVoicing(scale, chord, style) {

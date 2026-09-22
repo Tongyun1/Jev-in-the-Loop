@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { SCALES } from "../static/melody.js";
-import { buildHarmonyCandidates, voiceLeadChord } from "../static/harmony.js";
+import { buildHarmonyCandidates, planHarmonyFrame, voiceLeadChord } from "../static/harmony.js";
 
 for (const key of Object.keys(SCALES)) {
   const history = [];
@@ -18,6 +18,14 @@ for (const key of Object.keys(SCALES)) {
 }
 
 const varied = buildHarmonyCandidates({ key: "C major", bar: 1, history: [{ root: 5, id: "5_triad", roman: "vi" }] });
-assert.deepEqual(new Set(varied.map((chord) => chord.root)), new Set([0, 1, 2, 3, 4, 5, 6]), "every diatonic root is available to Jev");
+assert.deepEqual(new Set(varied.map((chord) => chord.root)), new Set([0, 1, 3, 4, 5]), "warm harmony has a deliberate diatonic palette");
 assert.equal(varied[0].root, 1, "a vi chord develops toward ii before falling back to a familiar loop");
+const calm = buildHarmonyCandidates({ key: "C major", bar: 0, profile: "calm" });
+const joyful = buildHarmonyCandidates({ key: "C major", bar: 0, profile: "joyful" });
+assert.ok(calm.every((chord) => [0, 1, 3, 5].includes(chord.root)));
+assert.ok(joyful.some((chord) => chord.root === 4), "joyful harmony has a dominant option for forward motion");
+const frame = planHarmonyFrame({ key: "C major", bar: 0, profile: "joyful", history: [] });
+assert.ok(frame.first.every((chord) => chord.root === frame.roots[0]));
+assert.ok(frame.second.every((chord) => chord.root === frame.roots[1]));
+assert.notEqual(frame.roots[0], frame.roots[1]);
 console.log("Harmony planning checks passed");

@@ -49,7 +49,7 @@ for (const key of Object.keys(SCALES)) {
 assert.ok(makeMelodyCandidates({ key: "C major", notes: motif, bar: 0 }).find((candidate) => candidate.id === "breathing").events.some((event) => event.duration >= 2), "breathing phrase has a genuine held note");
 for (const key of ["C major", "C minor", "G major", "F minor"]) {
   const candidates = makeTwoBarCandidates({ key, notes: motif, bar: 2, plan: { profile: "intense", counts: [6, 8], rhythms: ["dotted", "sixteenth"] } });
-  assert.equal(candidates.length, 12, `${key} keeps a choice of two-bar sentences`);
+  assert.ok(candidates.length >= 6, `${key} keeps several emotionally legal two-bar sentences`);
   for (const candidate of candidates) {
     assert.equal(candidate.bars.length, 2);
     assert.ok(candidate.bars[1].events.length > 0);

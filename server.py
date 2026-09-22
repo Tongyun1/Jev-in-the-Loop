@@ -43,6 +43,7 @@ RHYTHMS = {
 PERFORMANCE_PROFILES = {
     "calm": "calm, spacious: 2–4 attacks, mostly held notes and gentle stepwise motion",
     "warm": "warm, lyrical: 3–5 attacks, connected eighths and a soft long ending",
+    "joyful": "happy, playful: 5–8 attacks, lively eighths and syncopation with bright accents",
     "mysterious": "mysterious, suspended: 3–5 attacks, deliberate offbeats and lingering tension",
     "intense": "intense, driving: 5–8 attacks, dotted/syncopated/sixteenth movement and stronger accents",
 }
@@ -51,6 +52,8 @@ PERFORMANCE_PROFILES = {
 def profile_from_image(image: str, energy: float) -> str:
     if any(word in image for word in ("安静", "克制", "雨", "空", "平静", "quiet", "calm")):
         return "calm"
+    if any(word in image for word in ("开心", "快乐", "欢快", "活泼", "阳光", "明亮", "joy", "happy", "playful")):
+        return "joyful"
     if any(word in image for word in ("神秘", "雾", "夜", "悬", "mystery", "mysterious")):
         return "mysterious"
     if any(word in image for word in ("激昂", "愤怒", "冲", "热烈", "rage", "intense")) or energy > .7:
@@ -62,10 +65,11 @@ def fallback_plan(state: dict) -> dict:
     image = str(state.get("current_image", state.get("creative_brief", ""))).lower()
     energy = float(state.get("relative_energy", .45))
     profile = profile_from_image(image, energy)
-    quiet, intense = profile == "calm", profile == "intense"
-    counts = [3, 4] if quiet else [6, 7] if intense else [4, 6]
-    rhythms = ["even", "dotted"] if quiet else ["syncopated", "sixteenth"] if intense else ["dotted", "even"]
-    return {"source": "本地节奏规划", "profile": profile, "counts": counts, "rhythms": rhythms, "question_count": 5}
+    quiet, active = profile == "calm", profile in ("intense", "joyful")
+    counts = [2, 3] if quiet else [6, 7] if active else [3, 4]
+    rhythms = ["even", "dotted"] if quiet else ["even", "syncopated"] if profile == "joyful" else ["syncopated", "sixteenth"] if active else ["dotted", "even"]
+    development = {"calm": "breathing", "joyful": "sequence", "mysterious": "question", "intense": "leap"}.get(profile, "answer")
+    return {"source": "本地节奏规划", "profile": profile, "development": development, "counts": counts, "rhythms": rhythms, "question_count": 6}
 
 
 def ask_plan(state: dict) -> dict:
@@ -78,6 +82,7 @@ def ask_plan(state: dict) -> dict:
         "state": {"music": state},
         "questions": {
             "performance": {"type": "choice", "instructions": "Choose one performance profile for the next two bars from current_image. This choice governs the legal note count, rhythm families, melodic interval size, note length and velocity. Calm imagery must use calm; do not choose a visually matching profile that contradicts the music.", "criteria": PERFORMANCE_PROFILES},
+            "development": {"type": "choice", "instructions": "Choose one way to DEVELOP the user's motif in the NEXT two bars. Follow the active current_image, recent motif and phrase arc. Calm scenes prefer breathing, echo or answer; joyful scenes prefer sequence, arch or ornament. Choose a recognisable musical action, not a visual mood.", "criteria": {"motif_echo": "recognisable motif echo", "sequence": "rising or shifted sequence", "question": "an open question", "answer": "a gentle answer", "arch": "a rising and falling arch", "breathing": "held tones and silence", "ornament": "short decorative notes", "leap": "energetic leaps and recovery"}},
             "count_first": {"type": "choice", "instructions": "Choose the number of note attacks for the FIRST of two four-beat bars. Use current_image, relative_energy, recent note density, and the user's motif. Calm scenes need space; rising or intense scenes can be busier. Between 2 and 8, choose one number. This is onset count, not note duration.", "criteria": count_criteria},
             "count_second": {"type": "choice", "instructions": "Choose the number of note attacks for the SECOND bar. Make a small, intentional development of the first bar's energy and the current image. Between 2 and 8. This is onset count, not note duration.", "criteria": count_criteria},
             "rhythm_first": {"type": "choice", "instructions": "Choose the timing character for the FIRST bar from the current image and recent motif. Each family permits rests and held notes.", "criteria": RHYTHMS},
@@ -89,11 +94,12 @@ def ask_plan(state: dict) -> dict:
     with urlopen(request, timeout=6) as response:
         answers = json.load(response)["answers"]
     profile = answers["performance"]["choice"]
+    development = answers["development"]["choice"]
     counts = [int(answers[name]["choice"]) for name in ("count_first", "count_second")]
     rhythms = [answers[name]["choice"] for name in ("rhythm_first", "rhythm_second")]
-    if profile not in PERFORMANCE_PROFILES or any(count < 2 or count > 8 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
+    if profile not in PERFORMANCE_PROFILES or development not in body["questions"]["development"]["criteria"] or any(count < 2 or count > 8 for count in counts) or any(rhythm not in RHYTHMS for rhythm in rhythms):
         raise ValueError("Jev returned a rhythm plan outside the supplied choices")
-    return {"source": "Jev", "profile": profile, "counts": counts, "rhythms": rhythms, "question_count": 5, "context_chars": len(encoded)}
+    return {"source": "Jev", "profile": profile, "development": development, "counts": counts, "rhythms": rhythms, "question_count": 6, "context_chars": len(encoded)}
 
 
 def fallback(state: dict, candidates: list[dict]) -> dict:
@@ -101,9 +107,12 @@ def fallback(state: dict, candidates: list[dict]) -> dict:
     mood = state.get("current_image", state.get("creative_brief", state.get("mood", ""))).lower()
     energy = float(state.get("relative_energy", 0.45))
     density = float(state.get("notes_per_beat", 1.0))
+    profile = state.get("rhythmic_plan", {}).get("profile") or profile_from_image(mood, energy)
     wanted = "answer"
-    if any(word in mood for word in ("雨", "安静", "克制", "空", "calm", "quiet")):
+    if profile == "calm":
         wanted = "breathing" if energy < 0.58 else "answer"
+    elif profile == "joyful":
+        wanted = "sequence"
     elif any(word in mood for word in ("亮", "升", "期待", "lift", "bright")):
         wanted = "arch"
     elif energy > 0.72 or density > 1.8:
@@ -117,7 +126,7 @@ def fallback(state: dict, candidates: list[dict]) -> dict:
     harmony = (fresh_harmony or harmony_candidates or [{"id": "0_triad"}])[0]
     next_candidates = state.get("harmony_candidates_next", [])
     next_harmony = next((item for item in next_candidates if item.get("root") not in recent_roots and item.get("root") != harmony.get("root")), next_candidates[0] if next_candidates else {"id": "0_triad"})
-    visual_mood = "calm" if any(word in mood for word in ("雨", "安静", "克制", "空", "calm", "quiet")) else "angry" if energy > .72 else "bright" if any(word in mood for word in ("亮", "升", "期待", "bright")) else "warm"
+    visual_mood = "calm" if profile == "calm" else "bright" if profile == "joyful" else "angry" if profile == "intense" else "mysterious" if profile == "mysterious" else "warm"
     visual_scene = {"calm": "ocean", "angry": "embers", "bright": "bloom"}.get(visual_mood, "aurora")
     probability = 0.62
     probabilities = {

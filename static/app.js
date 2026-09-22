@@ -1,8 +1,9 @@
 import * as Tone from "https://esm.sh/tone@15.0.4";
 import { createOrb } from "./orb.js";
-import { SCALES, MEMORY_BARS, PHRASE_HISTORY_BARS, PHRASE_NAMES, makeMelodyCandidates, makeTwoBarCandidates, choosePlayableCandidate, midiToDegree, rhythmForBar } from "./melody.js";
-import { buildHarmonyCandidates, voiceLeadChord, VOICING_NAMES } from "./harmony.js";
+import { SCALES, MEMORY_BARS, PHRASE_HISTORY_BARS, PHRASE_NAMES, EMOTION_PROFILES, makeMelodyCandidates, makeTwoBarCandidates, choosePlayableCandidate, midiToDegree, rhythmForBar } from "./melody.js";
+import { buildHarmonyCandidates, planHarmonyFrame, voiceLeadChord, VOICING_NAMES } from "./harmony.js";
 import { shiftKey, keyForDecision } from "./tonality.js";
+import { classifyScene, normalizePlan } from "./direction.js";
 
 const $ = (id) => document.getElementById(id);
 const moodHues = { calm: 205, warm: 28, angry: 4, mysterious: 267, bright: 49 };
@@ -22,7 +23,8 @@ let started = false, barNumber = 0, decisionInFlight = false, decisionGeneration
 let queuedPhrase = null, currentPhrase = null, queuedHarmony = null, currentHarmony = null, lastChordNotes = [];
 let followingPhrase = null, followingHarmony = null;
 let preparedPhrase = null, preparedHarmony = null, preparedFollowingHarmony = null, preparedForBar = null;
-let notes = [], phraseHistory = [], harmonyHistory = [], energy = .42, micStream, analyser, micTimer;
+let preparedVisual = null;
+let notes = [], phraseHistory = [], harmonyHistory = [], energy = .42;
 let pendingKeyShift = null, pendingShiftAt = Infinity, shiftSource = null; // Applied at the next four-bar boundary.
 let sadMajorBars = 0, brightMinorBars = 0; // Mood-gate patience counters.
 const playbackSessionId = crypto.randomUUID();
@@ -53,15 +55,6 @@ function narrativeStage(bar = barNumber) {
   const parts = $("mood").value.split(/[，,、；;。]|->|→/).map((part) => part.trim()).filter(Boolean);
   if (!parts.length) return "自由延续";
   return parts[Math.min(parts.length - 1, Math.floor((bar % 8) * parts.length / 8))];
-}
-
-function explicitPerformanceProfile() {
-  const text = $("mood").value.toLowerCase();
-  if (/安静|平静|克制|雨|空|quiet|calm/.test(text)) return "calm";
-  if (/神秘|雾|悬|夜|mystery|mysterious/.test(text)) return "mysterious";
-  if (/激昂|愤怒|冲|热烈|rage|intense/.test(text)) return "intense";
-  if (/温暖|温柔|亲密|warm|tender/.test(text)) return "warm";
-  return null;
 }
 
 function audioMetrics() {
@@ -127,11 +120,11 @@ function updateStats() {
   orb?.setDensity(density01());
 }
 
-function applyVisualState(result) {
-  const image = narrativeStage();
-  const explicitMood = /雨|夜|安静|冷|克制|quiet|calm/i.test(image) ? "calm"
+function applyVisualState(result, decisionBar = barNumber) {
+  const image = narrativeStage(decisionBar);
+  const explicitMood = /雨|夜|平静|宁静|安静|冷|克制|quiet|calm/i.test(image) ? "calm"
     : /怒|激昂|燃|火|rage|angry/i.test(image) ? "angry"
-    : /亮|希望|光|晨|bright|hope/i.test(image) ? "bright"
+    : /开心|快乐|欢快|活泼|亮|希望|光|晨|bright|hope|joy|happy/i.test(image) ? "bright"
     : /暖|温柔|亲密|warm|tender/i.test(image) ? "warm"
     : /雾|神秘|迷|mystery/i.test(image) ? "mysterious" : null;
   const mood = explicitMood ?? (moodHues[result.visual_mood] === undefined ? "warm" : result.visual_mood);
@@ -146,22 +139,22 @@ function applyVisualState(result) {
   return Boolean(explicitMood && explicitMood !== result.visual_mood);
 }
 
-function stateForDecision(key = currentKey()) {
+function stateForDecision(key = currentKey(), targetBar = barNumber) {
   const scale = SCALES[key] ?? currentScale();
   const firstBar = Math.max(0, barNumber - MEMORY_BARS + 1);
   const recent = notes.filter((note) => note.bar >= firstBar).slice(-(MEMORY_BARS * 8));
   const degrees = recent.map((note) => midiToDegree(scale, note.midi));
   return {
-    session_id: playbackSessionId, bpm: currentBpm(), meter: "4/4", key, bar: barNumber,
+    session_id: playbackSessionId, bpm: currentBpm(), meter: "4/4", key, bar: targetBar,
     creative_brief: $("mood").value.trim(),
-    current_image: narrativeStage(),
+    current_image: narrativeStage(targetBar),
     // [relative bar, MIDI, sixteenth-note onset, sixteenth-note duration, velocity %, user/system]
     recent_events: recent.map((note) => [note.bar - firstBar, note.midi, Math.round(note.offset * 4), Math.round(note.duration * 4), Math.round(note.velocity * 100), note.origin === "user" ? "u" : "s"]),
     phrase_history: phraseHistory.slice(-PHRASE_HISTORY_BARS).map((entry) => entry.id),
     harmonic_history: harmonyHistory.slice(-MEMORY_BARS).map((entry) => ({ root: entry.root, chord: entry.roman, voicing: entry.voicing })),
     relative_energy: Number(energy.toFixed(2)),
     notes_per_beat: Number((recent.length / Math.max(4, (barNumber - firstBar + 1) * 4)).toFixed(2)),
-    melody_rules: { scale_midi: scale.steps.map((step) => scale.tonic + step), register_midi: [55, 79], grid: "sixteenth notes with dotted/syncopated rhythm families", harmony: ["tonic", "vi/relative", "subdominant", "dominant"][barNumber % 4], arc: ["introduce", "develop", "contrast", "resolve"][barNumber % 4] },
+    melody_rules: { scale_midi: scale.steps.map((step) => scale.tonic + step), register_midi: [55, 79], grid: "sixteenth notes", arc: ["introduce", "develop", "contrast", "resolve"][targetBar % 4] },
     motif: { degrees: degrees.slice(-8), contour: degrees.slice(1).map((degree, index) => Math.sign(degree - degrees[index])).slice(-7) },
   };
 }
@@ -207,10 +200,11 @@ async function postDecision(path, payload, timeoutMs = 1750) {
   }
 }
 
-function renderDecision(result, phrase, harmony, nextHarmony, key = currentKey(), decisionBar = barNumber) {
-  const correctedMood = applyVisualState(result);
+function renderDecision(result, phrase, harmony, nextHarmony, key = currentKey(), decisionBar = barNumber, plan = {}, activateVisual = true) {
+  const correctedMood = activateVisual ? applyVisualState(result, decisionBar) : false;
   $("source").textContent = correctedMood && result.source.startsWith("Jev") ? `${result.source} · 意境校色` : result.source;
   $("decision-key").textContent = key.replace(" major", " 大调").replace(" minor", " 小调");
+  $("decision-profile").textContent = `${EMOTION_PROFILES[plan.profile]?.label ?? "温暖"} · ${PHRASE_NAMES[plan.development] ?? "自由发展"}`;
   $("decision-rhythm").textContent = phrase.bars.map((part) => `${part.events.length} 音 · ${part.rhythmLabel ?? rhythmForBar(decisionBar).label}`).join(" → ");
   $("choice").textContent = PHRASE_NAMES[phrase.id] ?? phrase.id;
   const judge = /^Jev(?:$| ·)/.test(result.source) ? "Jev" : "本地规则";
@@ -246,26 +240,27 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   const generation = decisionGeneration;
   const decisionBar = targetBar;
   const plannedKey = keyForDecision(currentKey(), pendingKeyShift, targetBar, pendingShiftAt);
-  const baseState = { ...stateForDecision(plannedKey), bar: targetBar, phrase_bars: 2 };
+  const baseState = { ...stateForDecision(plannedKey, targetBar), phrase_bars: 2 };
   let plan;
   try {
     plan = await postDecision("/plan", { state: baseState });
   } catch {
     plan = { source: "本地节奏规划", profile: "warm", counts: [4, 5], rhythms: ["even", "dotted"] };
   }
-  // Explicit user language is a hard musical constraint. Jev may resolve
-  // ambiguous imagery, but it must not turn “平静” into an intense phrase.
-  plan = { ...plan, profile: explicitPerformanceProfile() ?? plan.profile ?? "warm" };
+  // The current scene alone is a hard constraint. A future happy scene cannot
+  // affect today's calm phrase, and today's calm words cannot mask it later.
+  plan = normalizePlan(plan, baseState.current_image);
   if (generation !== decisionGeneration || (destination === "prepared" ? barNumber > decisionBar : decisionBar !== barNumber)) {
     decisionInFlight = false;
     return;
   }
-  const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: decisionBar, history: phraseHistory, plan });
-  const harmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar, history: harmonyHistory });
-  const nextHarmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar + 1, history: harmonyHistory });
+  const harmonyFrame = planHarmonyFrame({ key: plannedKey, bar: decisionBar, history: harmonyHistory, profile: plan.profile });
+  const harmonyCandidates = harmonyFrame.first;
+  const nextHarmonyCandidates = harmonyFrame.second;
+  const candidates = makeTwoBarCandidates({ key: plannedKey, notes, bar: decisionBar, history: phraseHistory, plan, harmonicRoots: harmonyFrame.roots });
   let result;
   const decisionPayload = {
-    state: { ...baseState, rhythmic_plan: plan, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) },
+    state: { ...baseState, rhythmic_plan: plan, harmonic_roots: harmonyFrame.roots, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) },
     candidates: compactCandidates(candidates),
   };
   const localContextChars = contextSize(decisionPayload);
@@ -280,7 +275,7 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   result.context_chars = Math.max(Number(result.context_chars) || 0, localContextChars);
   if (plan.source !== "Jev" && result.source === "Jev") result.source = "Jev · 节奏规划回退";
   if (generation === decisionGeneration && (destination === "prepared" ? barNumber <= decisionBar : decisionBar === barNumber)) {
-    const selected = choosePlayableCandidate(result, candidates, phraseHistory, decisionBar) ?? candidates[0];
+    const selected = choosePlayableCandidate({ ...result, development: plan.development }, candidates, phraseHistory, decisionBar) ?? candidates[0];
     const harmony = chooseHarmony(result, harmonyCandidates, plannedKey);
     const secondChord = chooseHarmony({ harmony: result.harmony_next, voicing: result.voicing_next }, nextHarmonyCandidates, plannedKey, [...harmonyHistory, harmony]);
     const nextHarmony = voiceLeadChord({ key: plannedKey, chord: secondChord, style: secondChord.voicing, previous: harmony.notes });
@@ -309,12 +304,13 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
       preparedHarmony = harmony;
       preparedFollowingHarmony = nextHarmony;
       preparedForBar = decisionBar;
+      preparedVisual = { result, bar: decisionBar };
     } else {
       queuedPhrase = selected; // Keep the precise notes evaluated by Jev until the next bar.
       queuedHarmony = harmony;
       followingHarmony = nextHarmony;
     }
-    renderDecision(result, selected, harmony, nextHarmony, plannedKey, decisionBar);
+    renderDecision(result, selected, harmony, nextHarmony, plannedKey, decisionBar, plan, destination !== "prepared");
   }
   decisionInFlight = false;
 }
@@ -334,18 +330,21 @@ function playBar(time) {
     pendingShiftAt = Infinity;
   }
   if (preparedForBar === barNumber) {
+    if (preparedVisual) applyVisualState(preparedVisual.result, preparedVisual.bar);
     queuedPhrase = preparedPhrase;
     queuedHarmony = preparedHarmony;
     followingHarmony = preparedFollowingHarmony;
-    preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null;
+    preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; preparedVisual = null;
   }
   const packagePhrase = queuedPhrase;
   // A missed network deadline must never replay the preceding phrase. A fresh
   // legal local bar is less disruptive and gives the next prefetch a chance.
-  const emergencyCandidates = makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory });
+  const emergencyProfile = classifyScene(narrativeStage(barNumber)) ?? "warm";
+  const emergencyHarmony = planHarmonyFrame({ key: currentKey(), bar: barNumber, history: harmonyHistory, profile: emergencyProfile });
+  const emergencyCandidates = makeMelodyCandidates({ key: currentKey(), notes, bar: barNumber, history: phraseHistory, profile: emergencyProfile, chordRoot: emergencyHarmony.roots[0], noteCount: Math.round((EMOTION_PROFILES[emergencyProfile].minNotes + EMOTION_PROFILES[emergencyProfile].maxNotes) / 2) });
   const emergencyPhrase = emergencyCandidates[(barNumber * 5 + phraseHistory.length) % emergencyCandidates.length];
   const phrase = packagePhrase?.bars?.[0] ?? followingPhrase ?? emergencyPhrase;
-  const harmony = queuedHarmony ?? followingHarmony ?? chooseHarmony({ harmony: "", voicing: "auto" }, buildHarmonyCandidates({ key: currentKey(), bar: barNumber, history: harmonyHistory }));
+  const harmony = queuedHarmony ?? followingHarmony ?? chooseHarmony({ harmony: "", voicing: "auto" }, emergencyHarmony.first);
   if (packagePhrase?.bars) followingPhrase = packagePhrase.bars[1];
   else if (barNumber % 2 === 1) followingPhrase = null;
   if (barNumber % 2 === 1) followingHarmony = null;
@@ -391,6 +390,7 @@ function stopPlayback(message = "续写已停止。") {
   preparedHarmony = null;
   preparedFollowingHarmony = null;
   preparedForBar = null;
+  preparedVisual = null;
   if (transportEventId !== null) Tone.getTransport().clear(transportEventId);
   transportEventId = null;
   Tone.getTransport().stop();
@@ -464,31 +464,12 @@ function buildPiano() {
   }));
 }
 
-async function toggleMic() {
-  if (micStream) {
-    micStream.getTracks().forEach((track) => track.stop()); clearInterval(micTimer); micStream = null;
-    $("mic").textContent = "打开麦克风力度监听"; return;
-  }
-  await Tone.start();
-  micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  analyser = Tone.getContext().rawContext.createAnalyser(); analyser.fftSize = 2048;
-  Tone.getContext().rawContext.createMediaStreamSource(micStream).connect(analyser);
-  const buffer = new Uint8Array(analyser.fftSize);
-  micTimer = setInterval(() => {
-    analyser.getByteTimeDomainData(buffer);
-    const rms = Math.sqrt(buffer.reduce((sum, sample) => sum + ((sample - 128) / 128) ** 2, 0) / buffer.length);
-    energy = clamp(rms * 6, .03, .99); orb?.pulse(energy); updateStats();
-  }, 120);
-  $("mic").textContent = "关闭麦克风监听";
-}
-
 try { orb = createOrb($("orb"), audioMetrics); }
 catch { $("orb").classList.add("orb-fallback"); }
 applyVisualState({ visual_mood: "warm", visual_scene: "aurora", visual_temperature: 2, visual_motion: 1, visual_luminance: 2 });
 $("start").addEventListener("click", () => start().catch((error) => { $("now-playing").textContent = `启动失败：${error.message}`; started = false; $("start").disabled = false; }));
-$("mic").addEventListener("click", () => toggleMic().catch(() => { $("input-status").textContent = "没有取得麦克风权限；虚拟钢琴仍可使用。"; }));
 $("bpm").addEventListener("change", () => { if (started) Tone.getTransport().bpm.value = currentBpm(); });
-$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; currentHarmony = null; followingPhrase = null; followingHarmony = null; preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
+$("key").addEventListener("change", () => { decisionGeneration += 1; notes = []; phraseHistory = []; harmonyHistory = []; lastChordNotes = []; pendingKeyShift = null; pendingShiftAt = Infinity; queuedPhrase = null; currentPhrase = null; queuedHarmony = null; currentHarmony = null; followingPhrase = null; followingHarmony = null; preparedPhrase = null; preparedHarmony = null; preparedFollowingHarmony = null; preparedForBar = null; preparedVisual = null; buildPiano(); updateStats(); if (started && !decisionInFlight) requestDecision(); });
 $("tone").addEventListener("change", () => { if (started) createChordSynth(); });
 $("melody-volume").addEventListener("input", updateVolumes);
 $("chord-volume").addEventListener("input", updateVolumes);

@@ -110,10 +110,11 @@ export const RHYTHM_FAMILIES = [
 // This is a musical contract, not a visual palette. Every profile constrains
 // the candidates that Jev is allowed to compare.
 export const EMOTION_PROFILES = {
-  calm: { label: "平静", minNotes: 2, maxNotes: 4, rhythms: ["even", "dotted"], maxStep: 2, velocity: -.12, detached: false },
-  warm: { label: "温暖", minNotes: 3, maxNotes: 5, rhythms: ["even", "dotted"], maxStep: 3, velocity: -.03, detached: false },
-  mysterious: { label: "神秘", minNotes: 3, maxNotes: 5, rhythms: ["dotted", "syncopated"], maxStep: 4, velocity: -.04, detached: false },
-  intense: { label: "激昂", minNotes: 5, maxNotes: 8, rhythms: ["dotted", "syncopated", "sixteenth"], maxStep: 5, velocity: .09, detached: true },
+  calm: { label: "平静", minNotes: 2, maxNotes: 4, rhythms: ["even", "dotted"], maxStep: 2, velocity: -.12, detached: false, shapes: ["motif_echo", "retrograde", "question", "answer", "arch", "breathing", "cadence"] },
+  warm: { label: "温暖", minNotes: 3, maxNotes: 5, rhythms: ["even", "dotted"], maxStep: 3, velocity: -.03, detached: false, shapes: ["motif_echo", "inversion", "sequence", "question", "answer", "arch", "breathing", "cadence"] },
+  joyful: { label: "欢快", minNotes: 5, maxNotes: 8, rhythms: ["even", "dotted", "syncopated", "sixteenth"], maxStep: 4, velocity: .06, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "question", "answer", "arch", "leap", "ornament", "cadence"] },
+  mysterious: { label: "神秘", minNotes: 3, maxNotes: 5, rhythms: ["dotted", "syncopated"], maxStep: 4, velocity: -.04, detached: false, shapes: ["inversion", "retrograde", "rhythmic_shift", "question", "breathing", "ornament", "cadence"] },
+  intense: { label: "激昂", minNotes: 5, maxNotes: 8, rhythms: ["dotted", "syncopated", "sixteenth"], maxStep: 5, velocity: .09, detached: true, shapes: ["motif_echo", "sequence", "rhythmic_shift", "answer", "arch", "leap", "ornament", "cadence"] },
 };
 
 function emotionProfile(name) { return EMOTION_PROFILES[name] ?? EMOTION_PROFILES.warm; }
@@ -189,14 +190,15 @@ function snapToChord(scale, degree, chordDegrees) {
   return best;
 }
 
-export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null, profile: profileName = "warm" }) {
+export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFamily = null, noteCount = null, profile: profileName = "warm", chordRoot = null }) {
   const scale = SCALES[key] ?? SCALES["C major"];
   const profile = emotionProfile(profileName);
   const motif = motifFromNotes(scale, notes, bar);
   const lastDegree = midiToDegree(scale, notes.at(-1)?.midi ?? scale.tonic + 4);
   const rehearsalShift = motif.fromSystem ? 0 : [0, 1, -1, 0][motif.stage];
   const anchor = withinRegister(scale, (motif.stage === 2 ? lastDegree + (lastDegree < 4 ? 2 : -2) : lastDegree) + rehearsalShift);
-  const triad = bar % 4 === 0 ? [0, 2, 4] : bar % 4 === 1 ? [5, 0, 2] : bar % 4 === 2 ? [3, 5, 0] : [4, 6, 1];
+  const root = Number.isInteger(chordRoot) ? chordRoot : [0, 5, 3, 4][bar % 4];
+  const triad = [root, root + 2, root + 4];
   // Rhythm rotates across families so bars alternate even / dotted /
   // syncopated / sixteenth feels instead of a flat eighth-note grid.
   const permittedRhythm = profile.rhythms.includes(rhythmFamily) ? rhythmFamily : profile.rhythms[bar % profile.rhythms.length];
@@ -224,7 +226,7 @@ export function makeMelodyCandidates({ key, notes, bar, history = [], rhythmFami
   return shapes.map(([id, intent, rawDegrees, offsets, velocity]) => {
     if (Number.isFinite(noteCount)) {
       const requested = clamp(noteCount, profile.minNotes, profile.maxNotes);
-      const count = id === "breathing" ? Math.min(requested, 3) : id === "ornament" ? Math.max(requested, profileName === "intense" ? 5 : profile.minNotes) : requested;
+      const count = id === "breathing" ? Math.min(requested, 3) : id === "ornament" ? Math.max(requested, ["intense", "joyful"].includes(profileName) ? 5 : profile.minNotes) : requested;
       rawDegrees = notesForCount(rawDegrees, count);
       offsets = slotsForCount(rhythm.family, count);
     }
@@ -296,26 +298,29 @@ const ANSWERING_STYLE = {
   breathing: "ornament", ornament: "breathing", cadence: "motif_echo",
 };
 
-export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = null }) {
+export function makeTwoBarCandidates({ key, notes, bar, history = [], plan = null, harmonicRoots = null }) {
   const profileName = plan?.profile ?? "warm";
   const profile = emotionProfile(profileName);
+  const shapeIds = profile.shapes;
   // Candidate contrast stays inside the profile's permitted rhythm palette.
   // A calm request never receives a sixteenth-note candidate to select.
-  return Array.from({ length: Object.keys(PHRASE_NAMES).length }, (_, index) => {
+  return shapeIds.map((shapeId, choiceIndex) => {
+    const index = Object.keys(PHRASE_NAMES).indexOf(shapeId);
     const plannedFamily = plan?.rhythms?.[0];
-    const family = index % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + index) % profile.rhythms.length]
+    const family = choiceIndex % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + choiceIndex) % profile.rhythms.length]
       : profile.rhythms.includes(plannedFamily) ? plannedFamily : profile.rhythms[Math.floor(bar / 2) % profile.rhythms.length];
-    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0], profile: profileName })[index];
+    const first = makeMelodyCandidates({ key, notes, bar, history, rhythmFamily: family, noteCount: plan?.counts?.[0], profile: profileName, chordRoot: harmonicRoots?.[0] })[index];
     const simulatedNotes = [...notes, ...first.events.map((event) => ({ ...event, origin: "system", bar }))];
     const plannedAnswerFamily = plan?.rhythms?.[1];
-    const answerFamily = index % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + index + 1) % profile.rhythms.length]
+    const answerFamily = choiceIndex % 4 === 3 ? profile.rhythms[(Math.floor(bar / 2) + choiceIndex + 1) % profile.rhythms.length]
       : profile.rhythms.includes(plannedAnswerFamily) ? plannedAnswerFamily : profile.rhythms[(Math.floor(bar / 2) + 1) % profile.rhythms.length];
     const secondOptions = makeMelodyCandidates({
       key, notes: simulatedNotes, bar: bar + 1,
       history: [...history, first].slice(-PHRASE_HISTORY_BARS),
-      rhythmFamily: answerFamily, noteCount: plan?.counts?.[1], profile: profileName,
+      rhythmFamily: answerFamily, noteCount: plan?.counts?.[1], profile: profileName, chordRoot: harmonicRoots?.[1],
     });
-    const answerId = (bar + 1) % 4 === 3 ? "cadence" : ANSWERING_STYLE[first.id];
+    const intendedAnswer = (bar + 1) % 4 === 3 ? "cadence" : ANSWERING_STYLE[first.id];
+    const answerId = profile.shapes.includes(intendedAnswer) ? intendedAnswer : profile.shapes.includes("answer") ? "answer" : profile.shapes.includes("question") ? "question" : profile.shapes[0];
     const second = secondOptions.find((candidate) => candidate.id === answerId) ?? secondOptions[0];
     const events = [
       ...first.events,
@@ -366,7 +371,8 @@ export function choosePlayableCandidate(result, candidates, history = [], bar = 
     // Rhythm deja-vu is the new bottleneck: sampled runs show the same onset
     // patterns returning every few bars even when pitches differ.
     const rhythmRepeatCount = history.slice(-PHRASE_HISTORY_BARS).filter((entry) => entry.rhythmSignature === candidate.rhythmSignature).length;
-    return { candidate, isRecent, score: probability + densityFit + motifFit + cadenceFit - repeatedStyle * .1 - (candidate.duplicate ? .42 : 0) - (candidate.pitchRepeat ? .5 : 0) - contourPenalty - rhythmRepeatCount * .06 };
+    const developmentFit = result.development === candidate.id ? .1 : 0;
+    return { candidate, isRecent, score: probability + densityFit + motifFit + cadenceFit + developmentFit - repeatedStyle * .1 - (candidate.duplicate ? .42 : 0) - (candidate.pitchRepeat ? .5 : 0) - contourPenalty - rhythmRepeatCount * .06 };
   }).sort((a, b) => b.score - a.score);
   if (!ranked.length) return null;
   const modelChoice = candidates.find((candidate) => candidate.id === result.choice);

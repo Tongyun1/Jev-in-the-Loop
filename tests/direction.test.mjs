@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import { classifyScene, normalizePlan } from "../static/direction.js";
+import { makeTwoBarCandidates } from "../static/melody.js";
+import { planHarmonyFrame } from "../static/harmony.js";
+
+assert.equal(classifyScene("平静"), "calm");
+assert.equal(classifyScene("开心"), "joyful");
+assert.equal(classifyScene("一片迷雾"), "mysterious");
+const motif = [60, 62, 64, 67].map((midi, index) => ({ midi, bar: 0, offset: index * .5, duration: .5, velocity: .6, origin: "user" }));
+const input = { profile: "calm", counts: [3, 3], rhythms: ["even", "dotted"], development: "breathing" };
+const calmPlan = normalizePlan(input, "平静");
+const happyPlan = normalizePlan(input, "开心");
+assert.deepEqual(calmPlan.counts, [3, 3]);
+assert.deepEqual(happyPlan.counts, [6, 7], "the active happy scene lifts density even when the previous scene was calm");
+assert.equal(happyPlan.profile, "joyful");
+assert.equal(happyPlan.development, "sequence");
+const calm = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 0, plan: calmPlan });
+const happy = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 4, plan: happyPlan });
+const frame = planHarmonyFrame({ key: "C major", bar: 4, profile: "joyful" });
+const harmonized = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 4, plan: happyPlan, harmonicRoots: frame.roots });
+assert.ok(calm.every((phrase) => phrase.bars.every((bar) => bar.events.length <= 4)));
+assert.ok(happy.every((phrase) => phrase.bars.every((bar) => bar.events.length >= 5)));
+assert.ok(happy.some((phrase) => phrase.id === "ornament"));
+assert.ok(calm.every((phrase) => phrase.id !== "ornament" && phrase.id !== "leap"));
+const firstTone = harmonized.find((phrase) => phrase.id === "motif_echo").bars[0].events[0].degree;
+assert.ok([0, 2, 4].includes(((firstTone - frame.roots[0]) % 7 + 7) % 7), "first strong beat follows the planned chord root");
+console.log("Scene-to-music checks passed");
