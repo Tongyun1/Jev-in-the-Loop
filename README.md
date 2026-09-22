@@ -34,9 +34,9 @@ TYPESAFE_API_KEY=你的官方key python3 server.py
 
 结论是手动抽取：保留 OpenArranger 的量化切换与可编辑样式数据理念，采用 Tone.js 的浏览器音频时钟，并在两者之间放入 Jev 的有限候选决策。这样既能实时，也保留每一次选择的概率、回退和可解释性。
 
-每次请求只保留最近四小节、最多 32 个压缩音符事件，以及八小节的短句 ID 历史。第一阶段 `/plan` 含 6 个选择问题：情绪档案、动机发展、两小节各自的起音数量与节奏型。第二阶段 `/decision` 从情绪档案允许的完整两小节旋律与和弦中选择，同时判断视觉状态。`context_chars` 是请求 JSON 字符数，不是模型 token 用量。
+每次请求只保留最近四小节、最多 32 个压缩音符事件，以及八小节的短句 ID 历史。明确的当前情绪由本地规则规划节奏，不调用 `/plan`；无法归类的描述才调用一次 `/plan`，并按当前场景缓存规划。`/decision` 仍由 Jev 在完整两小节旋律与和弦候选中选择，同时判断视觉状态。服务端只向模型发送候选音符计划一次，候选说明仅出现在问题选项中，避免重复上下文。`context_chars` 是请求 JSON 字符数，不是模型 token 用量或账单金额。
 
-页面使用 [Three.js](https://github.com/mrdoob/three.js) 的球体、双层 GLSL 材质、粒子和环形光晕。Jev 的视觉选择控制色相、形变、运动和亮度；播放音符触发球体脉冲。当前意境中若明确出现“雨夜”“愤怒”“变亮”等词，页面会优先采用对应色调，防止过早出现后续场景的颜色，并在来源栏标出“意境校色”。方案参考了 MIT 许可的 [summer-orb](https://github.com/lbxa/summer-orb) 与 [audio_reactive_visualizer](https://github.com/gztes/audio_reactive_visualizer) 的架构，球体着色器和页面布局在本项目内重写。视觉情绪与旋律在第二阶段的同一次 JEV 请求中决定。每两个小节调用两次 JEV；120 BPM 时约每 4 秒规划一轮。
+页面使用 [Three.js](https://github.com/mrdoob/three.js) 的球体、双层 GLSL 材质、粒子和环形光晕。Jev 的视觉选择控制色相、形变、运动和亮度；播放音符触发球体脉冲。当前意境中若明确出现“雨夜”“愤怒”“变亮”等词，页面会优先采用对应色调，防止过早出现后续场景的颜色，并在来源栏标出“意境校色”。方案参考了 MIT 许可的 [summer-orb](https://github.com/lbxa/summer-orb) 与 [audio_reactive_visualizer](https://github.com/gztes/audio_reactive_visualizer) 的架构，球体着色器和页面布局在本项目内重写。视觉情绪与旋律在同一次 `/decision` 请求中决定。明确情绪下每两个小节调用一次 Jev；120 BPM 时约每 4 秒一次，即持续播放约 15 次/分钟。
 
 球体还会读取最近四小节的音符密度：密度升高时，核心体积、表面细节、粒子尺寸与光环会逐步增强；密度降低时会缓慢收回。颜色、运动、亮度和形状目标也在 WebGL 帧循环中以不同速度插值，避免每次 Jev 结果返回时出现刷新或重置感。控制区提供独立的“主旋律”和“和弦铺底”音量；铺底本身有较低预设音量，默认会让旋律保持在前景。
 

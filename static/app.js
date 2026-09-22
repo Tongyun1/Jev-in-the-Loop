@@ -3,7 +3,7 @@ import { createOrb } from "./orb.js";
 import { SCALES, MEMORY_BARS, PHRASE_HISTORY_BARS, PHRASE_NAMES, EMOTION_PROFILES, makeMelodyCandidates, makeTwoBarCandidates, choosePlayableCandidate, midiToDegree, rhythmForBar } from "./melody.js";
 import { buildHarmonyCandidates, planHarmonyFrame, voiceLeadChord, VOICING_NAMES } from "./harmony.js";
 import { shiftKey, keyForDecision } from "./tonality.js";
-import { classifyScene, normalizePlan } from "./direction.js";
+import { classifyScene, localScenePlan, normalizePlan } from "./direction.js";
 
 const $ = (id) => document.getElementById(id);
 const moodHues = { calm: 205, warm: 28, angry: 4, mysterious: 267, bright: 49 };
@@ -27,6 +27,7 @@ let preparedVisual = null;
 let notes = [], phraseHistory = [], harmonyHistory = [], energy = .42;
 let pendingKeyShift = null, pendingShiftAt = Infinity, shiftSource = null; // Applied at the next four-bar boundary.
 let sadMajorBars = 0, brightMinorBars = 0; // Mood-gate patience counters.
+const scenePlanCache = new Map();
 const playbackSessionId = crypto.randomUUID();
 const playbackChannel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("jev-living-melody-playback");
 let transportEventId = null;
@@ -163,13 +164,12 @@ function compactCandidates(candidates) {
   return candidates.map((candidate) => ({
     id: candidate.id, intent: candidate.intent,
     plan: candidate.events.map((event) => [event.degree, Math.round(event.offset * 4), Math.round(event.duration * 4), Math.round(event.velocity * 100)]),
-    contour: candidate.intervalSignature, rhythm: candidate.rhythmSignature,
     recent: candidate.recent, duplicate: candidate.duplicate,
   }));
 }
 
 function compactHarmonyCandidates(candidates) {
-  return candidates.map((candidate) => ({ id: candidate.id, root: candidate.root, priority: candidate.priority, roman: candidate.roman, quality: candidate.quality, emotion: candidate.emotion, role: candidate.role, intent: candidate.intent, recent: candidate.recent }));
+  return candidates.map((candidate) => ({ id: candidate.id, root: candidate.root, roman: candidate.roman, quality: candidate.quality, intent: candidate.intent, recent: candidate.recent }));
 }
 
 function contextSize(value) {
@@ -242,10 +242,20 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   const plannedKey = keyForDecision(currentKey(), pendingKeyShift, targetBar, pendingShiftAt);
   const baseState = { ...stateForDecision(plannedKey, targetBar), phrase_bars: 2 };
   let plan;
-  try {
-    plan = await postDecision("/plan", { state: baseState });
-  } catch {
-    plan = { source: "本地节奏规划", profile: "warm", counts: [4, 5], rhythms: ["even", "dotted"] };
+  if (classifyScene(baseState.current_image)) {
+    plan = localScenePlan(baseState.current_image, decisionBar);
+  } else if (scenePlanCache.has(baseState.current_image)) {
+    plan = { ...scenePlanCache.get(baseState.current_image), source: "场景缓存" };
+  } else {
+    try {
+      plan = await postDecision("/plan", { state: baseState });
+      if (plan.source === "Jev") {
+        if (scenePlanCache.size >= 8) scenePlanCache.delete(scenePlanCache.keys().next().value);
+        scenePlanCache.set(baseState.current_image, plan);
+      }
+    } catch {
+      plan = { source: "本地节奏规划" };
+    }
   }
   // The current scene alone is a hard constraint. A future happy scene cannot
   // affect today's calm phrase, and today's calm words cannot mask it later.
@@ -270,10 +280,9 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
     result = localFallback(candidates);
     result.source = "连接中断 · 本地音乐规则";
   }
-  // The UI should describe the payload that was actually constructed even if
-  // the server falls back before it can report its own full request size.
-  result.context_chars = Math.max(Number(result.context_chars) || 0, localContextChars);
-  if (plan.source !== "Jev" && result.source === "Jev") result.source = "Jev · 节奏规划回退";
+  // Prefer the actual Jev JSON size; local fallback only knows the browser payload.
+  result.context_chars = Number(result.context_chars) || localContextChars;
+  if (plan.source !== "Jev" && result.source === "Jev") result.source = `Jev · ${plan.source}`;
   if (generation === decisionGeneration && (destination === "prepared" ? barNumber <= decisionBar : decisionBar === barNumber)) {
     const selected = choosePlayableCandidate({ ...result, development: plan.development }, candidates, phraseHistory, decisionBar) ?? candidates[0];
     const harmony = chooseHarmony(result, harmonyCandidates, plannedKey);

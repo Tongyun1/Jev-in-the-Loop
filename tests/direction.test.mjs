@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { classifyScene, normalizePlan } from "../static/direction.js";
+import { classifyScene, localScenePlan, normalizePlan } from "../static/direction.js";
 import { makeTwoBarCandidates } from "../static/melody.js";
 import { planHarmonyFrame } from "../static/harmony.js";
 
@@ -14,6 +14,8 @@ assert.deepEqual(calmPlan.counts, [3, 3]);
 assert.deepEqual(happyPlan.counts, [6, 7], "the active happy scene lifts density even when the previous scene was calm");
 assert.equal(happyPlan.profile, "joyful");
 assert.equal(happyPlan.development, "sequence");
+assert.deepEqual([0, 2, 4, 6].map((bar) => localScenePlan("平静", bar).counts), [[2, 3], [3, 2], [3, 3], [2, 2]]);
+assert.ok([0, 2, 4, 6].every((bar) => localScenePlan("开心", bar).counts.every((count) => count >= 5 && count <= 8)));
 const calm = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 0, plan: calmPlan });
 const happy = makeTwoBarCandidates({ key: "C major", notes: motif, bar: 4, plan: happyPlan });
 const frame = planHarmonyFrame({ key: "C major", bar: 4, profile: "joyful" });

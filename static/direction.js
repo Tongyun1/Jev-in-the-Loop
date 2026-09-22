@@ -27,3 +27,14 @@ export function normalizePlan(plan = {}, scene = "") {
   const development = profile.shapes.includes(plan.development) ? plan.development : preferred;
   return { ...plan, profile: profileName, counts, rhythms, development };
 }
+
+export function localScenePlan(scene, bar) {
+  const plan = normalizePlan({ source: "本地情绪规划" }, scene);
+  const profile = EMOTION_PROFILES[plan.profile];
+  const phase = Math.floor(bar / 2) % 4;
+  const [first, second] = plan.counts;
+  const pairs = [[first, second], [second, first], [first + 1, second], [first, second - 1]];
+  plan.counts = pairs[phase].map((count) => Math.max(profile.minNotes, Math.min(profile.maxNotes, count)));
+  plan.rhythms = [profile.rhythms[phase % profile.rhythms.length], profile.rhythms[(phase + 1) % profile.rhythms.length]];
+  return plan;
+}

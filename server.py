@@ -170,9 +170,18 @@ def ask_jev(state: dict, candidates: list[dict]) -> dict:
     harmony_criteria = {item["id"]: item.get("intent", item["id"]) for item in harmony_candidates}
     next_harmony_candidates = state.get("harmony_candidates_next", [])
     next_harmony_criteria = {item["id"]: item.get("intent", item["id"]) for item in next_harmony_candidates}
+    # The choice descriptions live in criteria. Sending them again in state
+    # makes every phrase and chord description count twice in the same call.
+    model_state = {key: value for key, value in state.items() if key not in (
+        "session_id", "harmony_candidates", "harmony_candidates_next",
+    )}
+    playable_candidates = [
+        {key: item[key] for key in ("id", "plan", "recent", "duplicate") if key in item}
+        for item in candidates
+    ]
     body = {
         "model": os.environ.get("TYPESAFE_MODEL", "jev-latest"),
-        "state": {"music": state, "playable_candidates": candidates},
+        "state": {"music": model_state, "playable_candidates": playable_candidates},
         "questions": {
             "phrase": {
                 "type": "choice",
