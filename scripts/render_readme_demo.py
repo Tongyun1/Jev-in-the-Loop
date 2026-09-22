@@ -23,7 +23,7 @@ THEMES = {
     "hotel": {
         "index": "01",
         "title": "Search hotels. Open booking.",
-        "subtitle": "CTRIP.COM  /  KUNMING HOTELS",
+        "subtitle": "CTRIP.COM  /  BEIJING HOTELS",
         "accent": "#A9E8C9",
         "speed": 3,
     },

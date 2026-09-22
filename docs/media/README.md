@@ -16,7 +16,7 @@ there is no independent animation or JavaScript to synchronize on GitHub.
 
 | Preview | Uploaded MP4 | Playback | Clock |
 | --- | --- | --- | --- |
-| `demo-hotel.gif` | [Ctrip recording](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) | 3×, already applied in the supplied MP4 | Clip position × 3; ends at about 45.5 s |
+| `demo-hotel.gif` | [Beijing Ctrip recording](demo-hotel-beijing.mp4) | 3×, already applied in the supplied video | Clip position × 3; ends at about 43.7 s |
 | `demo-course.gif` | [Bilibili recording](https://github.com/user-attachments/assets/0a7e59a4-65af-4f65-9d15-17ac95641864) | 1× | Clip position; ends at 19.0 s |
 
 The counters represent elapsed time in the supplied recordings, including their
@@ -28,6 +28,12 @@ The dark editorial layout, scene numbers, mint/lavender accents, horizontal
 progress line, and plain-language titles are rendered by
 [`render_readme_demo.py`](../../scripts/render_readme_demo.py). All browser
 content and existing privacy masks come from the user-supplied recordings.
+
+The Beijing demo uses November 11–12, 2026, one room and two adults.
+`demo-hotel-beijing.mp4` is an H.264 MP4 compressed from the supplied MOV,
+with the full frame and clip duration preserved, resized to 1920 pixels wide.
+The supplied Beijing recording is already sped up 3×. The GIF preserves that
+playback rate and multiplies clip position by 3 to display recording elapsed time.
 
 ## Regenerate
 

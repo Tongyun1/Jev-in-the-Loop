@@ -28,14 +28,14 @@
 
 #### One prompt. Ready to book.
 
-> Find hotels in Kunming, Yunnan, for two adults, checking in October 13 and out October 14.
+> Find hotels in Beijing, for two adults, checking in November 11, 2026, and out November 12.
 > Choose a room and open the booking form. Leave the final confirmation to me.
 
 Change the destination, search hotels, explore the details, and select a room. A sequence of clicks becomes one continuous flow, stopping at the booking form for you to take over.
 
-<img src="docs/media/demo-hotel.gif" alt="Ctrip hotel search and booking-page demo at 3× playback, with a source-time counter" width="100%" />
+<img src="docs/media/demo-hotel.gif" alt="Ctrip Beijing hotel search and booking-page demo, at 3× playback, with a source-time counter" width="100%" />
 
-[Watch the original MP4](https://github.com/user-attachments/assets/a40ab93c-341f-4fbd-adcc-23bac8d92273) · **3× playback** · Timer shows recording elapsed time.
+[Watch the Beijing hotel demo (MP4)](docs/media/demo-hotel-beijing.mp4) · **3× playback** · Timer shows recording elapsed time.
 
 #### From curiosity to a course
 
@@ -78,7 +78,7 @@ Use Jev to search Bilibili in English for Stanford CS336 and open the first vide
 Prepare a trip:
 
 ```text
-Use Jev to find hotels in Kunming on Ctrip for October 13–14, one room, two adults.
+Use Jev to find hotels in Beijing on Ctrip for November 11–12, 2026, one room, two adults.
 Open a hotel, choose a room, and stop at the booking form. Do not submit an order.
 ```
 
