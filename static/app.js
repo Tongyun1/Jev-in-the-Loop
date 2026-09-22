@@ -34,10 +34,10 @@ const playbackChannel = typeof BroadcastChannel === "undefined" ? null : new Bro
 let transportEventId = null;
 
 const CHORD_TONES = {
-  pad: { oscillator: "sawtooth", detune: 10, filter: 1700, attack: .32, release: 1.3, reverb: .5, volume: -18 },
-  warm: { oscillator: "triangle", detune: 0, filter: 1900, attack: .12, release: .75, reverb: .28, volume: -16 },
-  bell: { oscillator: "sine", detune: 0, filter: 5000, attack: .015, release: 2.2, reverb: .62, volume: -22 },
-  organ: { oscillator: "square", detune: 0, filter: 2600, attack: .04, release: .5, reverb: .22, volume: -20 },
+  pad: { oscillator: "sawtooth", detune: 10, filter: 1700, attack: .32, release: 1.3, reverb: .5, volume: -12 },
+  warm: { oscillator: "triangle", detune: 0, filter: 1900, attack: .12, release: .75, reverb: .28, volume: -11 },
+  bell: { oscillator: "sine", detune: 0, filter: 5000, attack: .015, release: 2.2, reverb: .62, volume: -16 },
+  organ: { oscillator: "square", detune: 0, filter: 2600, attack: .04, release: .5, reverb: .22, volume: -14 },
 };
 
 function currentKey() { return $("key").value; }
@@ -113,12 +113,6 @@ function chooseHarmony(result, candidates, key = currentKey(), history = harmony
 }
 
 function updateStats() {
-  const firstBar = Math.max(0, barNumber - MEMORY_BARS + 1);
-  const recent = notes.filter((note) => note.bar >= firstBar);
-  const beats = Math.max(4, (barNumber - firstBar + 1) * 4);
-  $("energy").textContent = energy.toFixed(2);
-  $("density").textContent = `${(recent.length / beats).toFixed(2)} / beat`;
-  $("notes").textContent = notes.slice(-8).map((note) => noteName(note.midi)).join(" · ") || "—";
   $("motif-notes").textContent = userMotifNotes.slice(-8).map((midi) => noteName(midi)).join("  ·  ") || "等待输入";
   $("input-status").textContent = userMotifNotes.length
     ? `已输入 ${userMotifNotes.length} 个音。${started ? "续写时也可以继续弹奏。" : "准备好后点击“开始续写”。"}`
@@ -230,8 +224,13 @@ function renderDecision(result, phrase, harmony, nextHarmony, key = currentKey()
     return note;
   }));
   $("harmony").textContent = `${harmony.roman} → ${nextHarmony.roman} · ${VOICING_NAMES[harmony.voicing]} / ${VOICING_NAMES[nextHarmony.voicing]}`;
-  $("confidence").textContent = `${Math.round((Number(result.confidence) || 0) * 100)}%`;
-  $("context").textContent = result.context_chars ? `${result.context_chars} 字符` : "—";
+  $("live-choice").textContent = result.choice === phrase.id
+    ? (PHRASE_NAMES[phrase.id] ?? phrase.id)
+    : `${PHRASE_NAMES[result.choice] ?? result.choice} → ${PHRASE_NAMES[phrase.id] ?? phrase.id}`;
+  $("live-confidence").textContent = `${Math.round((Number(result.confidence) || 0) * 100)}%`;
+  $("confidence-note").textContent = judge === "Jev"
+    ? "Jev 为整段乐句选择候选；音符来自被选中的乐句，置信度对应整句。"
+    : "当前由本地规则选择整段乐句；音符来自被选中的乐句，置信度对应整句。";
   const entries = Object.entries(result.probabilities ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
   $("probabilities").replaceChildren(...entries.map(([id, probability]) => {
     const row = document.createElement("div"); row.className = `prob${id === phrase.id ? " selected" : ""}`;
@@ -377,11 +376,13 @@ function playBar(time) {
   queuedHarmony = null; currentHarmony = harmony;
   const secondsPerBeat = 60 / currentBpm();
   if (chordSynth) chordSynth.triggerAttackRelease(harmony.notes.map(noteName), Math.max(.5, secondsPerBeat * 3.85), time, .52);
-  for (const event of phrase.events) {
+  for (const [eventIndex, event] of phrase.events.entries()) {
+    const nextEvent = phrase.events[eventIndex + 1] ?? (packagePhrase?.bars?.[1] === phrase ? null : followingPhrase?.events[0]);
     const noteTime = time + event.offset * secondsPerBeat;
     synth.triggerAttackRelease(noteName(event.midi), event.duration * secondsPerBeat, noteTime, event.velocity);
     Tone.Draw.schedule(() => {
-      $("playing-note").textContent = `${noteName(event.midi)} · ${event.duration.toFixed(2)} 拍`;
+      $("live-note").textContent = `${noteName(event.midi)} · ${event.duration.toFixed(2)} 拍`;
+      $("live-next").textContent = nextEvent ? noteName(nextEvent.midi) : "等待下一句";
       orb?.beat(event.velocity, event.duration);
     }, noteTime);
     notes.push({ midi: event.midi, bar: barNumber, offset: event.offset, duration: event.duration, velocity: event.velocity, origin: "system" });
@@ -445,6 +446,8 @@ async function start() {
     // whole bar together.
     envelope: { attack: .012, decay: .16, sustain: .42, release: .42 },
   });
+  // Internal instrument balance; the two user-facing dB sliders remain neutral controls.
+  synth.volume.value = -8;
   synth.connect(melodyDelay); synth.connect(melodyReverb);
   createChordSynth();
   audioAnalyser = new Tone.Analyser("fft", 64); synth.connect(audioAnalyser);
