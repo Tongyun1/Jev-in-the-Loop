@@ -179,6 +179,10 @@ function compactHarmonyCandidates(candidates) {
   return candidates.map((candidate) => ({ id: candidate.id, root: candidate.root, priority: candidate.priority, roman: candidate.roman, quality: candidate.quality, emotion: candidate.emotion, role: candidate.role, intent: candidate.intent, recent: candidate.recent }));
 }
 
+function contextSize(value) {
+  return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+
 function localFallback(candidates) {
   const brief = narrativeStage();
   const preferred = /雨|安静|克制|空|quiet|calm/i.test(brief) ? "breathing" : /怒|激昂|冲|rage|fast/i.test(brief) ? "leap" : "answer";
@@ -260,12 +264,20 @@ async function requestDecision(targetBar = barNumber, destination = "queued") {
   const harmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar, history: harmonyHistory });
   const nextHarmonyCandidates = buildHarmonyCandidates({ key: plannedKey, bar: decisionBar + 1, history: harmonyHistory });
   let result;
+  const decisionPayload = {
+    state: { ...baseState, rhythmic_plan: plan, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) },
+    candidates: compactCandidates(candidates),
+  };
+  const localContextChars = contextSize(decisionPayload);
   try {
-    result = await postDecision("/decision", { state: { ...baseState, rhythmic_plan: plan, harmony_candidates: compactHarmonyCandidates(harmonyCandidates), harmony_candidates_next: compactHarmonyCandidates(nextHarmonyCandidates) }, candidates: compactCandidates(candidates) });
+    result = await postDecision("/decision", decisionPayload);
   } catch {
     result = localFallback(candidates);
     result.source = "连接中断 · 本地音乐规则";
   }
+  // The UI should describe the payload that was actually constructed even if
+  // the server falls back before it can report its own full request size.
+  result.context_chars = Math.max(Number(result.context_chars) || 0, localContextChars);
   if (plan.source !== "Jev" && result.source === "Jev") result.source = "Jev · 节奏规划回退";
   if (generation === decisionGeneration && (destination === "prepared" ? barNumber <= decisionBar : decisionBar === barNumber)) {
     const selected = choosePlayableCandidate(result, candidates, phraseHistory, decisionBar) ?? candidates[0];
