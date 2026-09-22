@@ -1,5 +1,10 @@
 # Jev-in-the-Loop
 
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](plugins/jev-browser-plugin/pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange)](plugins/jev-browser-plugin/pyproject.toml)
+[![Codex plugin](https://img.shields.io/badge/Codex-Plugin-111827)](plugins/jev-browser-plugin/README_ZH.md)
+
 [English](README.md) · **简体中文**
 
 <img src="docs/media/hero-project.gif" alt="Jev-in-the-Loop — 让决策更快，让任务更进一步" width="100%" />
